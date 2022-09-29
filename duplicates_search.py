@@ -3,28 +3,34 @@ import time
 import hashlib
 
 class DuplicatesSeacher:
-    def read_block(file_obj, block_size):
+    def block_reader(self, file_obj, block_size):
         while True:
             block = file_obj.read(block_size)
             if not block:
                 return
             yield block
 
+
+    def get_hash(self, filename, first_block_only):
+        with open(filename, 'rb') as f:
+            try:
+                hash_obj = hashlib.sha1()
+                if first_block_only:
+                    hash_obj.update(read_block(f, 1024))
+                else:
+                    for block in block_reader(f, 1024):
+                        hash_obj.update(block)
+            except IOError:
+                print(f'I/O error with {filename}')
+        return hash_obj.hexdigit().lower()
+
+
+
     def search(self, list_of_files):
         print('Start searching for duplicates\n...')
         duplicates = dict()
         for filename in list_of_files:
-            with open(filename, 'rb') as f:
-                try:
-                    hash_func = hashlib.sha1()
-                    first_block = read_block(f, 1024)
-                    hash_func.update(first_block)
-                    if hash_func.hexdigit().lower() in duplicates:
-                        continue
-                    else:
-                        pass
-                except IOError:
-                    print(f'I/O error with {filename}')
+            continue
 
         for el in os.walk(dir):
             for filename in el[-1]:
