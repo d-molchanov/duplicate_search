@@ -10,7 +10,7 @@ class DuplicatesSeacher:
                 return
             yield block
 
-
+    # Ошибка обратотана, но возникнет ошибка, если не удастся посчитать хэш
     def get_hash(self, filename, first_block_only):
         with open(filename, 'rb') as f:
             try:
@@ -25,22 +25,28 @@ class DuplicatesSeacher:
         return hash_obj.hexdigit().lower()
 
 
-
     def search(self, list_of_files):
-        print('Start searching for duplicates\n...')
-        duplicates = dict()
-        for filename in list_of_files:
-            continue
+        # print('Start searching for duplicates\n...')
+        if len(list_of_files) < 2:
+            return None
+        else:
+            duplicates = dict()
+            hash_1kB = dict()
+            hash_total = dict()
+            for filename in list_of_files:
 
-        for el in os.walk(dir):
-            for filename in el[-1]:
-                file_path = os.path.join(el[0], filename)
-                file_size = os.path.getsize(file_path)
-                if file_size in data:
-                    duplicates[file_size].append(file_path)
-                else:
-                    duplicates[file_size] = [file_path]
-        return duplicates
+            return duplicates
+
+    def searc_hash_1kB(self, list_of_files):
+        data = dict()
+        for filename in list_of_files:
+            hash_obj = self.get_hash(filename, True)
+            if hash_obj in data:
+                data[hash_obj].append(filename)
+            else:
+                data[hash_obj] = [filename]
+        return data
+
 
     def search_same_size(self, dir):
         data = dict()
@@ -54,7 +60,7 @@ class DuplicatesSeacher:
                     else:
                         data[file_size] = [file_path]
                 except OSError:
-                    continue
+                    print(f'Error:\t<{filename}> is not accessible')
         return data
 
 if __name__ == '__main__':
