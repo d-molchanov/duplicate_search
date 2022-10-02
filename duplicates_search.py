@@ -91,43 +91,71 @@ class DuplicatesSeacher:
             data.pop(key)
         return data
 
+
+    def get_directory_info(self, dir):
+        amount_of_files = 0
+        amount_of_directories = 0
+        total_size_of_files = 0
+        total_size_of_directories = 0
+        for root, subdir, filenames in os.walk(dir):
+            for f in filenames:
+                file_path = os.path.join(root, f)
+                try:
+                    file_size = os.path.getsize(file_path)
+                    amount_of_files += 1
+                    total_size_of_files += file_size
+                except OSError:
+                    print(f'Error:\t<{filename}> is not accessible')
+            for s in subdir:
+                dir_path = os.path.join(root, s)
+                try:
+                    dir_size = os.path.getsize(dir_path)
+                    amount_of_directories += 1
+                    total_size_of_directories += dir_size
+                except OSError:
+                    print(f'Error:\t<{filename}> is not accessible')
+        print(f'Amount of directories:\t{amount_of_directories}')    
+        print(f'Amount of files:\t{amount_of_files}')
+        print(f'Amount of files and directories:\t{amount_of_directories + amount_of_files}')
+        print(f'Total size of files:\t{round(total_size_of_files/10**9, 3)} GB')
+        print(f'Total size of directories:\t{round(total_size_of_directories/10**9, 3)} GB')
+        print(f'Total size:\t{round((total_size_of_directories + total_size_of_files)/10**9, 3)} GB')
+
+
 if __name__ == '__main__':
     time_start = time.perf_counter()
     print('This is program for duplicates searching.')
     ds = DuplicatesSeacher()
-    files = ds.search_same_size('./JIHT')
-    # files = ds.search_same_size('./test')
-    # for key, value in files.items():
-    #     print(f'{key}:\t{value}')
-    hash_1kB = dict()
-    for el in files.keys():
-        temp_dict = ds.search_hash_1kB(files[el])
-        for key, value in temp_dict.items():
-            hash_1kB[key] = value
-    # for key, value in hash_1kB.items():
-    #     print(f'{key}:\t{value}')
-    hash_total = dict()
-    for el in hash_1kB.keys():
-        temp_dict = ds.search_hash(hash_1kB[el])
-        for key, value in temp_dict.items():
-            hash_total[key] = value
+    ds.get_directory_info('./JIHT')
+    # files = ds.search_same_size('./JIHT')
+
+    # hash_1kB = dict()
+    # for el in files.keys():
+    #     temp_dict = ds.search_hash_1kB(files[el])
+    #     for key, value in temp_dict.items():
+    #         hash_1kB[key] = value
+
+    # hash_total = dict()
+    # for el in hash_1kB.keys():
+    #     temp_dict = ds.search_hash(hash_1kB[el])
+    #     for key, value in temp_dict.items():
+    #         hash_total[key] = value
+
+    # hash_size = dict()
+    # available_space = 0
     # for key, value in hash_total.items():
-    #     print(f'{key}:\t{value}')
-    hash_size = dict()
-    available_space = 0
-    for key, value in hash_total.items():
-        size_of_file = os.path.getsize(value[0])
-        available_space += size_of_file*(len(value) - 1)
-        hash_size[size_of_file] = key
-    file_sizes = list(hash_size.keys())
-    file_sizes.sort()
-    file_sizes.reverse()
-    with open('log.csv', 'w') as w:
-        for s in file_sizes:
-            w.write(f'{s};{hash_size[s]}\n')
-            for el in hash_total[hash_size[s]]:
-                w.write(f';{el}\n')
-    print(f'Available space:\t{round(available_space/2**30, 3)} GiB')
+    #     size_of_file = os.path.getsize(value[0])
+    #     available_space += size_of_file*(len(value) - 1)
+    #     hash_size[size_of_file] = key
+    # file_sizes = list(hash_size.keys())
+    # file_sizes.sort()
+    # file_sizes.reverse()
+    # with open('log.csv', 'w') as w:
+    #     for s in file_sizes:
+    #         w.write(f'{s};{hash_size[s]}\n')
+    #         for el in hash_total[hash_size[s]]:
+    #             w.write(f';{el}\n')
+    # print(f'Available space:\t{round(available_space/2**30, 3)} GiB')
     total_time = time.perf_counter() - time_start
     print(
         f'Search has finished in {round(total_time*1e3, 3)} ms'
