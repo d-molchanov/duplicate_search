@@ -91,7 +91,7 @@ class DuplicatesSeacher:
             data.pop(key)
         return data
 
-    def __make_readable(self, size_in_bytes):
+    def make_readable(self, size_in_bytes):
         if size_in_bytes == 0:
             return '0 B'
         n = size_in_bytes
@@ -118,15 +118,15 @@ class DuplicatesSeacher:
         print(f'Scanning:\t\t<{target_dir}>')
         amount_of_files = 0
         amount_of_dirs = 0
-        total_size_of_files = 0
-        total_size_of_dirs = 0
+        size_of_files = 0
+        size_of_dirs = 0
         for root, dirs, filenames in os.walk(dir):
             for f in filenames:
                 file_path = os.path.join(root, f)
                 try:
                     file_size = os.path.getsize(file_path)
                     amount_of_files += 1
-                    total_size_of_files += file_size
+                    size_of_files += file_size
                 except OSError:
                     print(f'Error:\t<{file_path}> is not accessible')
             for d in dirs:
@@ -134,22 +134,21 @@ class DuplicatesSeacher:
                 try:
                     dir_size = os.path.getsize(dir_path)
                     amount_of_dirs += 1
-                    total_size_of_dirs += dir_size
+                    size_of_dirs += dir_size
                 except OSError:
                     print(f'Error:\t<{dir_path}> is not accessible')
 
         amount_of_items = amount_of_files + amount_of_dirs
-        total_size_of_items = total_size_of_files + total_size_of_dirs
-        
-        print(' / '.join((
-                    f'Files:\t\t\t{amount_of_files}',
-                    f'{self.__make_readable(total_size_of_files)}')))
-        print(' / '.join((
-            f'Directories:\t{amount_of_dirs}',
-            f'{self.__make_readable(total_size_of_dirs)}')))
-        print(' / '.join((
-            f'Total items:\t{amount_of_items}',
-            f'{self.__make_readable(total_size_of_items)}')))
+        size_of_items = size_of_files + size_of_dirs
+
+        return {
+            'amount_of_files': amount_of_files,
+            'amount_of_dirs': amount_of_dirs,
+            'amount_of_items': amount_of_items,
+            'size_of_files': size_of_files,
+            'size_of_dirs': size_of_dirs,
+            'size_of_items': size_of_items
+        }
 
 
 
@@ -157,8 +156,17 @@ if __name__ == '__main__':
     time_start = time.perf_counter()
     print('This is a program for duplicates searching.')
     ds = DuplicatesSeacher()
-    ds.get_directory_info('./JIHT')
+    dir_info = ds.get_directory_info('./JIHT')
     # ds.get_directory_info('./test')
+    print(' / '.join((
+        f'Files:\t\t\t{dir_info["amount_of_files"]}',
+        f'{ds.make_readable(dir_info["size_of_files"])}')))
+    print(' / '.join((
+        f'Directories:\t{dir_info["amount_of_dirs"]}',
+        f'{ds.make_readable(dir_info["size_of_dirs"])}')))
+    print(' / '.join((
+        f'Total items:\t{dir_info["amount_of_items"]}',
+        f'{ds.make_readable(dir_info["size_of_items"])}')))
     # files = ds.search_same_size('./JIHT')
 
     # hash_1kB = dict()
