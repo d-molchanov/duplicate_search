@@ -91,13 +91,36 @@ class DuplicatesSeacher:
             data.pop(key)
         return data
 
+    def __make_readable(self, size_in_bytes):
+        if size_in_bytes == 0:
+            return '0 B'
+        n = size_in_bytes
+        number_of_digits = 0
+        while n > 0:
+            n //= 10
+            number_of_digits += 1
+        if number_of_digits > 15:
+            return f'{round(size_in_bytes / 10**15, 3)} PB'
+        elif number_of_digits > 12:
+            return f'{round(size_in_bytes / 10**12, 3)} TB'
+        elif number_of_digits > 9:
+            return f'{round(size_in_bytes / 10**9, 3)} GB'
+        elif number_of_digits > 6:
+            return f'{round(size_in_bytes / 10**6, 3)} MB'
+        elif number_of_digits > 3:
+            return f'{round(size_in_bytes / 10**3, 3)} kB'
+        else:
+            return f'{size_in_bytes} B'
+
 
     def get_directory_info(self, dir):
+        target_dir = os.path.abspath(dir)
+        print(f'Scanning:\t\t<{target_dir}>')
         amount_of_files = 0
-        amount_of_directories = 0
+        amount_of_dirs = 0
         total_size_of_files = 0
-        total_size_of_directories = 0
-        for root, subdir, filenames in os.walk(dir):
+        total_size_of_dirs = 0
+        for root, dirs, filenames in os.walk(dir):
             for f in filenames:
                 file_path = os.path.join(root, f)
                 try:
@@ -105,28 +128,37 @@ class DuplicatesSeacher:
                     amount_of_files += 1
                     total_size_of_files += file_size
                 except OSError:
-                    print(f'Error:\t<{filename}> is not accessible')
-            for s in subdir:
-                dir_path = os.path.join(root, s)
+                    print(f'Error:\t<{file_path}> is not accessible')
+            for d in dirs:
+                dir_path = os.path.join(root, d)
                 try:
                     dir_size = os.path.getsize(dir_path)
-                    amount_of_directories += 1
-                    total_size_of_directories += dir_size
+                    amount_of_dirs += 1
+                    total_size_of_dirs += dir_size
                 except OSError:
-                    print(f'Error:\t<{filename}> is not accessible')
-        print(f'Amount of directories:\t{amount_of_directories}')    
-        print(f'Amount of files:\t{amount_of_files}')
-        print(f'Amount of files and directories:\t{amount_of_directories + amount_of_files}')
-        print(f'Total size of files:\t{round(total_size_of_files/10**9, 3)} GB')
-        print(f'Total size of directories:\t{round(total_size_of_directories/10**9, 3)} GB')
-        print(f'Total size:\t{round((total_size_of_directories + total_size_of_files)/10**9, 3)} GB')
+                    print(f'Error:\t<{dir_path}> is not accessible')
+
+        amount_of_items = amount_of_files + amount_of_dirs
+        total_size_of_items = total_size_of_files + total_size_of_dirs
+        
+        print(' / '.join((
+                    f'Files:\t\t\t{amount_of_files}',
+                    f'{self.__make_readable(total_size_of_files)}')))
+        print(' / '.join((
+            f'Directories:\t{amount_of_dirs}',
+            f'{self.__make_readable(total_size_of_dirs)}')))
+        print(' / '.join((
+            f'Total items:\t{amount_of_items}',
+            f'{self.__make_readable(total_size_of_items)}')))
+
 
 
 if __name__ == '__main__':
     time_start = time.perf_counter()
-    print('This is program for duplicates searching.')
+    print('This is a program for duplicates searching.')
     ds = DuplicatesSeacher()
     ds.get_directory_info('./JIHT')
+    # ds.get_directory_info('./test')
     # files = ds.search_same_size('./JIHT')
 
     # hash_1kB = dict()
