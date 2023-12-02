@@ -415,6 +415,17 @@ class DuplicatesSeacher:
         else:
             print('There is no file for deleting')
 
+    def create_report_2(self, duplicates, filename):
+        sizes = sorted(list(duplicates.keys()), reverse=True)
+        with open(filename, 'w') as f:
+            for s in sizes:
+                for d in duplicates[s]:
+                    for key, value in d.items():
+                        f.write(f'{key};{self.make_readable(s)}\n')
+                        value = sorted(value, reverse=True)
+                        for v in value:
+                            f.write(f'{v}\n')
+
     def remove_empty_directories(self, target_dir: str):
         there_are_empty_directories = True
         while there_are_empty_directories:
