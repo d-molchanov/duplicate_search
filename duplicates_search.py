@@ -300,7 +300,7 @@ class DuplicatesSeacher:
         
     def find_duplicates_new(self, sizes_by_files: dict):
 
-       files_by_size = dict()
+        files_by_size = dict()
         for key, value in sizes_by_files.items():
             if value in files_by_size:
                 files_by_size[value].append(key)
@@ -359,8 +359,8 @@ class DuplicatesSeacher:
             f'{self.make_readable(size_of_items)}')))
 
         duplicates = self.find_duplicates_new(files)
-        self.print_duplicates_info_new(duplicates, files, 
-            size_of_files, 'Duplicates:\t\t')
+        # self.print_duplicates_info_new(duplicates, files, 
+        #     size_of_files, 'Duplicates:\t\t')
 
         return duplicates
         
