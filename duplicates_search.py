@@ -300,7 +300,7 @@ class DuplicatesSeacher:
         
     def find_duplicates_new(self, sizes_by_files: dict):
 
-        files_by_size = dict()
+       files_by_size = dict()
         for key, value in sizes_by_files.items():
             if value in files_by_size:
                 files_by_size[value].append(key)
@@ -319,7 +319,16 @@ class DuplicatesSeacher:
             duplicates_by_first_block_hash, self.get_item_hash)
         duplicates_by_hash = self.remove_items_with_one_value(files_by_hash)
         
-        return duplicates_by_hash
+        # duplicates = {(k, sizes_by_files[v[0]]): v for k, v in duplicates_by_hash.items()}
+        duplicates = dict()
+        for key, value in duplicates_by_hash.items():
+            if sizes_by_files[value[0]] in duplicates:
+                duplicates[sizes_by_files[value[0]]].append({key:value})
+            else:
+                duplicates[sizes_by_files[value[0]]] = [{key:value}]
+
+        # return duplicates_by_hash
+        return duplicates
 
     def remove_none_values(self, input_dict: dict):
         return {key: value for key, value in 
