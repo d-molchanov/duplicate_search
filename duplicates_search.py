@@ -374,6 +374,47 @@ class DuplicatesSeacher:
                         for v in value:
                             f.write(f'{key};{self.make_readable(s)};{v}\n')
 
+    def create_list_for_deleting(self, duplicates, filename, detailed=False):
+        if duplicates:
+            sizes = sorted(list(duplicates.keys()), reverse=True)
+            duplicates_for_deleting = 0
+            free_space = 0
+            with open(filename, 'w') as f:
+                if detailed:
+                    for s in sizes:
+                        for d in duplicates[s]:
+                            for key, value in d.items():
+                                dfd = len(value) - 1
+                                duplicates_for_deleting += dfd
+                                free_space += s*dfd
+                                value = sorted(value, reverse=True)
+                                for v in value[1:]:
+                                    f.write(f'{key};{self.make_readable(s)};{v}\n')
+                    if sizes[-1] == 0:
+                        key = list(duplicates[0][0].keys())[0]
+                        v = sorted(duplicates[0][0][key], reverse=True)[0]
+                        f.write(f'{key};{self.make_readable(0)};{v}\n')        
+                else:
+                    for s in sizes:
+                        for d in duplicates[s]:
+                            for key, value in d.items():
+                                dfd = len(value) - 1
+                                duplicates_for_deleting += dfd
+                                free_space += s*dfd
+                                value = sorted(value, reverse=True)
+                                for v in value[1:]:
+                                    f.write(f'{v}\n')
+                    if sizes[-1] == 0:
+                        key = list(duplicates[0][0].keys())[0]
+                        v = sorted(duplicates[0][0][key], reverse=True)[0]
+                        duplicates_for_deleting += 1
+                        f.write(f'{v}\n')
+            print(' / '.join((
+                f'Items for deleting:\t\t{duplicates_for_deleting}',
+                f'{self.make_readable(free_space)}')))
+        else:
+            print('There is no file for deleting')
+
     def remove_empty_directories(self, target_dir: str):
         there_are_empty_directories = True
         while there_are_empty_directories:
