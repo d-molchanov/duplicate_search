@@ -364,7 +364,15 @@ class DuplicatesSeacher:
 
         return duplicates
         
-
+    def create_report(self, duplicates, filename):
+        sizes = sorted(list(duplicates.keys()), reverse=True)
+        with open(filename, 'w') as f:
+            for s in sizes:
+                for d in duplicates[s]:
+                    for key, value in d.items():
+                        value = sorted(value, reverse=True)
+                        for v in value:
+                            f.write(f'{key};{self.make_readable(s)};{v}\n')
 
     def remove_empty_directories(self, target_dir: str):
         there_are_empty_directories = True
