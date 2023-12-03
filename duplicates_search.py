@@ -335,15 +335,26 @@ class DuplicatesSeacher:
                 duplicates[sizes_by_files[value[0]]] = [{key:value}]
 
         # return duplicates_by_hash
-        for key, value in duplicates.items():
-            print(key, end='\t')
-            for v in value:
-                for i, j in v.items():
-                    print(i)
-                    for a in j:
-                        print(f'\t{a}')
-
+        # for key, value in duplicates.items():
+        #     print(key, end='\t')
+        #     for v in value:
+        #         for i, j in v.items():
+        #             print(i)
+        #             for a in j:
+        #                 print(f'\t{a}')
+        print(duplicates)
         return duplicates
+
+    def get_duplicates_to_remove(self, duplicates: dict) -> dict:
+        result = dict()
+        for size, dicts in duplicates.items():
+            result[size] = []
+            for d in dicts:
+                temp_d = dict()
+                for _hash, _path in d.items():
+                    temp_d[_hash] = _path[1:]
+                result[size].append(temp_d)
+        return result
 
     #Зачем вообще нужен этот метод?
     def remove_none_values(self, input_dict: dict):
@@ -480,7 +491,10 @@ if __name__ == '__main__':
     # time_start = time.perf_counter()
     ds = DuplicatesSeacher()
     duplicates = ds.find_duplicates_in_directory(target_dirs)
-    ds.create_report(duplicates, 'out.csv')
+    ds.create_report(duplicates, 'duplicates.csv')
+    ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
+    duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
+    ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
