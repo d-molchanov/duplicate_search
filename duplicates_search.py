@@ -2,6 +2,13 @@ import os
 import time
 from datetime import datetime
 import hashlib
+from argparse import ArgumentParser
+
+def create_parser():
+    parser = ArgumentParser()
+    parser.add_argument('dirs', nargs='+')
+
+    return parser
 
 class DuplicatesSeacher:
     
@@ -451,24 +458,30 @@ class DuplicatesSeacher:
 
 
 if __name__ == '__main__':
-    time_start = time.perf_counter()
-    print('This is a program for duplicates searching.')
-    # target_dir = './JIHT'
-    target_dir = './test'
-    ds = DuplicatesSeacher()
-    duplicates = ds.find_duplicates_in_directory(target_dir)
-    total_time = time.perf_counter() - time_start
-    print(
-        f'Search has finished in {round(total_time*1e3, 3)} ms')
-    time_start = time.perf_counter()
-    # ds.remove_duplicates('output.csv', '\t')
-    total_time = time.perf_counter() - time_start
-    print(
-        f'Removing of duplicates has finished in {round(total_time*1e3, 3)} ms'
-    )
-    time_start = time.perf_counter()
-    ds.remove_empty_directories(target_dir)
-    total_time = time.perf_counter() - time_start
-    print(
-        f'Removing of empty directories has finished in {round(total_time*1e3, 3)} ms'
-    )
+
+    argparser = create_parser()
+    args = argparser.parse_args(['.', './test'])
+    for a in args.dirs:
+        print(os.path.abspath(a))
+    # print(os.path.abspath(args.dirs))
+    # time_start = time.perf_counter()
+    # print('This is a program for duplicates searching.')
+    # # target_dir = './JIHT'
+    # target_dir = './test'
+    # ds = DuplicatesSeacher()
+    # duplicates = ds.find_duplicates_in_directory(target_dir)
+    # total_time = time.perf_counter() - time_start
+    # print(
+    #     f'Search has finished in {round(total_time*1e3, 3)} ms')
+    # time_start = time.perf_counter()
+    # # ds.remove_duplicates('output.csv', '\t')
+    # total_time = time.perf_counter() - time_start
+    # print(
+    #     f'Removing of duplicates has finished in {round(total_time*1e3, 3)} ms'
+    # )
+    # time_start = time.perf_counter()
+    # ds.remove_empty_directories(target_dir)
+    # total_time = time.perf_counter() - time_start
+    # print(
+    #     f'Removing of empty directories has finished in {round(total_time*1e3, 3)} ms'
+    # )
