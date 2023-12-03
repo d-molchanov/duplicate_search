@@ -369,7 +369,8 @@ class DuplicatesSeacher:
         for size, dicts in duplicates.items():
             for d in dicts:
                 for _hash, _path in d.items():
-                    pass
+                    for p in _path:
+                        self.remove_file(p)
 
 
     #Зачем вообще нужен этот метод?
