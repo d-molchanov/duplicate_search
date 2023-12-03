@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import hashlib
 from argparse import ArgumentParser
+from itertools import permutations
 
 def create_parser():
     parser = ArgumentParser()
@@ -342,7 +343,7 @@ class DuplicatesSeacher:
         #             print(i)
         #             for a in j:
         #                 print(f'\t{a}')
-        print(duplicates)
+        # print(duplicates)
         return duplicates
 
     def get_duplicates_to_remove(self, duplicates: dict) -> dict:
@@ -495,24 +496,44 @@ class DuplicatesSeacher:
             if count == 0:
                 there_are_empty_directories = False
 
+    #Метод работает, но его нужно отрефакторить. Также см. Лутц, т.1 стр. 603 - возможно обойтись без itertools
+    def get_individual_paths(self, paths:list) -> list:
+        abspaths = [os.path.abspath(p) for p in paths]
+        paths = [p for p in abspaths if os.path.exists(p)]
+        paths_set = set(paths)
+        _paths = []
+        for p in paths:
+            if p in paths_set:
+                _paths.append(p)
+                paths_set.remove(p)
+        result = _paths[:]
+        for a, b in permutations(_paths, 2):
+            if os.path.commonpath([a]) == os.path.commonpath([a, b]):
+                if b in result:
+                    result.remove(b)
+        return result
+
 
 if __name__ == '__main__':
 
+
     argparser = create_parser()
+    #Нужно сделать проверку, что директории не являются вложенными (или идентичными)
     args = argparser.parse_args(['./test', './test (копия)'])
-    # args = argparser.parse_args(['./test'])
     print('This is a program for duplicates searching. Directories for searching:\n')
-    target_dirs = args.dirs
+    ds = DuplicatesSeacher()
+    target_dirs = ds.get_individual_paths(args.dirs)
     for d in target_dirs:
         print(os.path.abspath(d))
     # time_start = time.perf_counter()
-    ds = DuplicatesSeacher()
     duplicates = ds.find_duplicates_in_directory(target_dirs)
     ds.create_report(duplicates, 'duplicates.csv')
     # ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
     duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
     ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
-    ds.remove_duplicates(duplicates_to_remove)
+
+    ds.get_individual_paths(['./test/1',  '/home/dmitry/Projects/(2023_12_02)_From_Github/duplicate_search/test/1', './test (копия)'])
+    # ds.remove_duplicates(duplicates_to_remove)
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
