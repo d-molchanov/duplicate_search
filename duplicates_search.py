@@ -273,37 +273,37 @@ class DuplicatesSeacher:
                     result.append(f'{s}\t{k}\t{v}')
         return '\n'.join(result)
         
-    def find_duplicates(self, files: list):
-        sizes_by_files = self.get_sizes_by_filenames(files)
-        files_by_size = self.get_equal_files(files, self.get_item_size)
-        dirs_by_size = self.get_equal_files(subdirs, self.get_item_size)
-        dir_info = self.get_directory_info(_dir, files_by_size, dirs_by_size)
-        self.print_dir_info(dir_info)
+    # def find_duplicates(self, files: list):
+    #     sizes_by_files = self.get_sizes_by_filenames(files)
+    #     files_by_size = self.get_equal_files(files, self.get_item_size)
+    #     dirs_by_size = self.get_equal_files(subdirs, self.get_item_size)
+    #     dir_info = self.get_directory_info(_dir, files_by_size, dirs_by_size)
+    #     self.print_dir_info(dir_info)
         
-        duplicates_by_size = self.remove_items_with_one_value(files_by_size)
-        self.print_duplicates_info(duplicates_by_size, sizes_by_files, 
-            dir_info, 'Duplicates by size:')
+    #     duplicates_by_size = self.remove_items_with_one_value(files_by_size)
+    #     self.print_duplicates_info(duplicates_by_size, sizes_by_files, 
+    #         dir_info, 'Duplicates by size:')
 
-        files_by_first_block_hash = self.get_files_of_equal_hash(
-            duplicates_by_size, self.get_first_block_hash)
-        duplicates_by_first_block_hash = self.remove_items_with_one_value(
-            files_by_first_block_hash)
-        self.print_duplicates_info(
-            duplicates_by_first_block_hash, sizes_by_files, 
-            dir_info, 'Duplicates by 1kB:')
+    #     files_by_first_block_hash = self.get_files_of_equal_hash(
+    #         duplicates_by_size, self.get_first_block_hash)
+    #     duplicates_by_first_block_hash = self.remove_items_with_one_value(
+    #         files_by_first_block_hash)
+    #     self.print_duplicates_info(
+    #         duplicates_by_first_block_hash, sizes_by_files, 
+    #         dir_info, 'Duplicates by 1kB:')
 
-        files_by_hash = self.get_files_of_equal_hash(
-            duplicates_by_first_block_hash, self.get_item_hash)
-        duplicates_by_hash = self.remove_items_with_one_value(files_by_hash)
-        self.print_duplicates_info(duplicates_by_hash, sizes_by_files, 
-            dir_info, 'Duplicates by hash:')
+    #     files_by_hash = self.get_files_of_equal_hash(
+    #         duplicates_by_first_block_hash, self.get_item_hash)
+    #     duplicates_by_hash = self.remove_items_with_one_value(files_by_hash)
+    #     self.print_duplicates_info(duplicates_by_hash, sizes_by_files, 
+    #         dir_info, 'Duplicates by hash:')
         
      
-        files_to_remove = self.get_files_to_remove(duplicates_by_hash)
-        self.print_duplicates_info(files_to_remove, sizes_by_files, 
-            dir_info, 'Files to remove:')
+    #     files_to_remove = self.get_files_to_remove(duplicates_by_hash)
+    #     self.print_duplicates_info(files_to_remove, sizes_by_files, 
+    #         dir_info, 'Files to remove:')
 
-        return files_to_remove
+    #     return files_to_remove
         
     def find_duplicates_new(self, sizes_by_files: dict):
 
@@ -335,6 +335,14 @@ class DuplicatesSeacher:
                 duplicates[sizes_by_files[value[0]]] = [{key:value}]
 
         # return duplicates_by_hash
+        for key, value in duplicates.items():
+            print(key, end='\t')
+            for v in value:
+                for i, j in v.items():
+                    print(i)
+                    for a in j:
+                        print(f'\t{a}')
+
         return duplicates
 
     #Зачем вообще нужен этот метод?
@@ -373,12 +381,14 @@ class DuplicatesSeacher:
         return duplicates
         
     def create_report(self, duplicates, filename):
-        sizes = sorted(list(duplicates.keys()), reverse=True)
+        # sizes = sorted(duplicates, reverse=True)
+        # sizes = sorted(list(duplicates.keys()), reverse=True)
         with open(filename, 'w') as f:
-            for s in sizes:
+            # for s in sizes:
+            for s in sorted(duplicates, reverse=True):
                 for d in duplicates[s]:
                     for key, value in d.items():
-                        value = sorted(value, reverse=True)
+                        # value = sorted(value, reverse=True)
                         for v in value:
                             f.write(f'{key};{self.make_readable(s)};{v}\n')
 
@@ -462,6 +472,7 @@ if __name__ == '__main__':
 
     argparser = create_parser()
     args = argparser.parse_args(['./test', './test (копия)'])
+    # args = argparser.parse_args(['./test'])
     print('This is a program for duplicates searching. Directories for searching:\n')
     target_dirs = args.dirs
     for d in target_dirs:
@@ -469,6 +480,7 @@ if __name__ == '__main__':
     # time_start = time.perf_counter()
     ds = DuplicatesSeacher()
     duplicates = ds.find_duplicates_in_directory(target_dirs)
+    ds.create_report(duplicates, 'out.csv')
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
