@@ -84,13 +84,13 @@ class DuplicatesSeacher:
             content['dirs'] += self.get_paths(root, dirs)
         return content
 
-    def get_directory_content_new(self, _dir: str):
+    def get_directory_content_new(self, _dirs: list) -> dict:
         list_of_files = []
         list_of_dirs = []
-        
-        for root, dirs, filenames in os.walk(_dir):
-            list_of_files += self.get_paths(root, filenames)
-            list_of_dirs += self.get_paths(root, dirs)
+        for d in _dirs:
+            for root, dirs, filenames in os.walk(d):
+                list_of_files.extend(self.get_paths(root, filenames))
+                list_of_dirs.extend(self.get_paths(root, dirs))
         files = self.get_sizes_by_filenames(list_of_files)
         dirs = self.get_sizes_by_filenames(list_of_dirs)
         
@@ -337,13 +337,14 @@ class DuplicatesSeacher:
         # return duplicates_by_hash
         return duplicates
 
+    #Зачем вообще нужен этот метод?
     def remove_none_values(self, input_dict: dict):
         return {key: value for key, value in 
             input_dict.items() if value != None}
 
 
-    def find_duplicates_in_directory(self, _dir: str):
-        dir_content = self.get_directory_content_new(_dir)
+    def find_duplicates_in_directory(self, _dirs: list):
+        dir_content = self.get_directory_content_new(_dirs)
         files = dir_content['files']
         files_count = len(dir_content['files'])
         size_of_files = sum(list(dir_content['files'].values()))
@@ -354,7 +355,7 @@ class DuplicatesSeacher:
         items_count = files_count + dirs_count
         size_of_items = size_of_files + size_of_dirs
 
-        print(f'Current directory:\t\t{os.path.abspath(_dir)}')
+        # print(f'Current directory:\t\t{os.path.abspath(_dir)}')
         print(' / '.join((
             f'Files:\t\t\t\t\t{files_count}',
             f'{self.make_readable(size_of_files)}')))
@@ -460,16 +461,14 @@ class DuplicatesSeacher:
 if __name__ == '__main__':
 
     argparser = create_parser()
-    args = argparser.parse_args(['.', './test'])
-    for a in args.dirs:
-        print(os.path.abspath(a))
-    # print(os.path.abspath(args.dirs))
+    args = argparser.parse_args(['./test', './test (копия)'])
+    print('This is a program for duplicates searching. Directories for searching:\n')
+    target_dirs = args.dirs
+    for d in target_dirs:
+        print(os.path.abspath(d))
     # time_start = time.perf_counter()
-    # print('This is a program for duplicates searching.')
-    # # target_dir = './JIHT'
-    # target_dir = './test'
-    # ds = DuplicatesSeacher()
-    # duplicates = ds.find_duplicates_in_directory(target_dir)
+    ds = DuplicatesSeacher()
+    duplicates = ds.find_duplicates_in_directory(target_dirs)
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
