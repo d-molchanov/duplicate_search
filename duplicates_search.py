@@ -356,10 +356,10 @@ class DuplicatesSeacher:
                 result[size].append(temp_d)
         return result
 
-    def remove_file(filename: str) -> None:
+    def remove_file(self, filename: str) -> None:
         if os.path.isfile(filename):
             try:
-                remove(filename)
+                os.remove(filename)
             except FileNotFoundError:
                 print(f'<{filename}> does not exist.')
             except PermissionError:
@@ -512,6 +512,7 @@ if __name__ == '__main__':
     # ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
     duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
     ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
+    ds.remove_duplicates(duplicates_to_remove)
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
