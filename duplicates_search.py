@@ -356,6 +356,22 @@ class DuplicatesSeacher:
                 result[size].append(temp_d)
         return result
 
+    def remove_file(filename: str) -> None:
+        if os.path.isfile(filename):
+            try:
+                remove(filename)
+            except FileNotFoundError:
+                print(f'<{filename}> does not exist.')
+            except PermissionError:
+                print(f'<{filename}> is busy.')
+
+    def remove_duplicates(self, duplicates: dict) -> None:
+        for size, dicts in duplicates.items():
+            for d in dicts:
+                for _hash, _path in d.items():
+                    pass
+
+
     #Зачем вообще нужен этот метод?
     def remove_none_values(self, input_dict: dict):
         return {key: value for key, value in 
@@ -492,7 +508,7 @@ if __name__ == '__main__':
     ds = DuplicatesSeacher()
     duplicates = ds.find_duplicates_in_directory(target_dirs)
     ds.create_report(duplicates, 'duplicates.csv')
-    ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
+    # ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
     duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
     ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
     # total_time = time.perf_counter() - time_start
