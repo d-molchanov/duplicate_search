@@ -539,6 +539,20 @@ class DuplicatesSeacher:
             print(f'FileNotFoundError with <{target_dir}>:',
                 'directory does not exist.')
 
+    def remove_empty_directories(self, target_dir: str):
+        directories_by_level = self.rank_directories(target_dir)
+        removed_directories = []
+        for level in sorted(directories_by_level, reverse=True):
+            for d in directories_by_level[level]:
+                self.remove_empty_directory(d)
+                removed_directories.append(os.path.abspath(d))
+        if removed_directories:
+            print('Removed directories:')
+            for i,d in enumerate(removed_directories, start=1):
+                print(i, d)
+        else:
+            print(f'There is no empty directory in <{target_dir}>')
+
 
 if __name__ == '__main__':
 
@@ -559,9 +573,9 @@ if __name__ == '__main__':
     ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
 
     ds.get_individual_paths(['./test/1',  '/home/dmitry/Projects/(2023_12_02)_From_Github/duplicate_search/test/1', './test (копия)'])
-    # ds.remove_duplicates(duplicates_to_remove)
-    ds.rank_directories('./test (копия)')
-    ds.remove_empty_directory('./test (копия)/2/2_1')
+    ds.remove_duplicates(duplicates_to_remove)
+    for d in target_dirs:
+        ds.remove_empty_directories(d)
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
