@@ -514,6 +514,21 @@ class DuplicatesSeacher:
         return result
 
 
+    def rank_directories(self, target_dir: str):
+        directories_by_level = dict()
+        for root, dirs, files in os.walk(os.path.abspath(target_dir)):
+            if not files:
+                dir_level = root.count(os.path.sep)
+                if dir_level in directories_by_level:
+                    directories_by_level[dir_level].append(root)
+                else:
+                    directories_by_level[dir_level] = [root]
+        # for key in sorted(directories_by_level, reverse=True):
+        #     print(key)
+        #     print(*directories_by_level[key], sep='\n')
+        return directories_by_level 
+
+
 if __name__ == '__main__':
 
 
@@ -534,6 +549,7 @@ if __name__ == '__main__':
 
     ds.get_individual_paths(['./test/1',  '/home/dmitry/Projects/(2023_12_02)_From_Github/duplicate_search/test/1', './test (копия)'])
     # ds.remove_duplicates(duplicates_to_remove)
+    ds.rank_directories('./test (копия)')
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
