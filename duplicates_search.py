@@ -8,6 +8,7 @@ from itertools import permutations
 def create_parser():
     parser = ArgumentParser()
     parser.add_argument('dirs', nargs='+')
+    parser.add_argument('-r', '--remove', action='store_true', help='Remove found duplicates.')
 
     return parser
 
@@ -559,7 +560,8 @@ if __name__ == '__main__':
 
     argparser = create_parser()
     #Нужно сделать проверку, что директории не являются вложенными (или идентичными)
-    args = argparser.parse_args(['./test', './test (копия)'])
+    args = argparser.parse_args(['./test', './test (копия)', '-r'])
+    print(args)
     print('This is a program for duplicates searching. Directories for searching:\n')
     ds = DuplicatesSeacher()
     target_dirs = ds.get_individual_paths(args.dirs)
@@ -572,10 +574,12 @@ if __name__ == '__main__':
     duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
     ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
 
-    ds.get_individual_paths(['./test/1',  '/home/dmitry/Projects/(2023_12_02)_From_Github/duplicate_search/test/1', './test (копия)'])
-    ds.remove_duplicates(duplicates_to_remove)
-    for d in target_dirs:
-        ds.remove_empty_directories(d)
+    if args.remove:
+        ds.remove_duplicates(duplicates_to_remove)
+        for d in target_dirs:
+            ds.remove_empty_directories(d)
+
+    # ======================old============================
     # total_time = time.perf_counter() - time_start
     # print(
     #     f'Search has finished in {round(total_time*1e3, 3)} ms')
