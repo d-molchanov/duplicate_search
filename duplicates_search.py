@@ -275,37 +275,6 @@ class DuplicatesSeacher:
                     result.append(f'{s}\t{k}\t{v}')
         return '\n'.join(result)
         
-    # def find_duplicates(self, files: list):
-    #     sizes_by_files = self.get_sizes_by_filenames(files)
-    #     files_by_size = self.get_equal_files(files, self.get_item_size)
-    #     dirs_by_size = self.get_equal_files(subdirs, self.get_item_size)
-    #     dir_info = self.get_directory_info(_dir, files_by_size, dirs_by_size)
-    #     self.print_dir_info(dir_info)
-        
-    #     duplicates_by_size = self.remove_items_with_one_value(files_by_size)
-    #     self.print_duplicates_info(duplicates_by_size, sizes_by_files, 
-    #         dir_info, 'Duplicates by size:')
-
-    #     files_by_first_block_hash = self.get_files_of_equal_hash(
-    #         duplicates_by_size, self.get_first_block_hash)
-    #     duplicates_by_first_block_hash = self.remove_items_with_one_value(
-    #         files_by_first_block_hash)
-    #     self.print_duplicates_info(
-    #         duplicates_by_first_block_hash, sizes_by_files, 
-    #         dir_info, 'Duplicates by 1kB:')
-
-    #     files_by_hash = self.get_files_of_equal_hash(
-    #         duplicates_by_first_block_hash, self.get_item_hash)
-    #     duplicates_by_hash = self.remove_items_with_one_value(files_by_hash)
-    #     self.print_duplicates_info(duplicates_by_hash, sizes_by_files, 
-    #         dir_info, 'Duplicates by hash:')
-        
-     
-    #     files_to_remove = self.get_files_to_remove(duplicates_by_hash)
-    #     self.print_duplicates_info(files_to_remove, sizes_by_files, 
-    #         dir_info, 'Files to remove:')
-
-    #     return files_to_remove
         
     def find_duplicates_new(self, sizes_by_files: dict):
 
@@ -411,10 +380,7 @@ class DuplicatesSeacher:
         return duplicates
         
     def create_report(self, duplicates, filename):
-        # sizes = sorted(duplicates, reverse=True)
-        # sizes = sorted(list(duplicates.keys()), reverse=True)
         with open(filename, 'w') as f:
-            # for s in sizes:
             for s in sorted(duplicates, reverse=True):
                 for d in duplicates[s]:
                     for key, value in d.items():
@@ -462,17 +428,6 @@ class DuplicatesSeacher:
                 f'{self.make_readable(free_space)}')))
         else:
             print('There is no file for deleting')
-
-    def create_report_2(self, duplicates, filename):
-        sizes = sorted(list(duplicates.keys()), reverse=True)
-        with open(filename, 'w') as f:
-            for s in sizes:
-                for d in duplicates[s]:
-                    for key, value in d.items():
-                        f.write(f'{key};{self.make_readable(s)}\n')
-                        value = sorted(value, reverse=True)
-                        for v in value:
-                            f.write(f'{v}\n')
 
     def remove_empty_directories(self, target_dir: str):
         there_are_empty_directories = True
@@ -589,7 +544,7 @@ if __name__ == '__main__':
     if f:
         f.write('Target directories for duplicate search:\n')
         f.write('\n'.join(['{0:>{2}}. {1}'.format(i+1, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
-        f.write('Duplicates found:\n')
+        f.write('\nDuplicates found:\n')
         for s in sorted(duplicates, reverse=True):
             for d in duplicates[s]:
                 for key, value in d.items():
