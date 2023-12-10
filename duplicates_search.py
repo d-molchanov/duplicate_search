@@ -554,13 +554,20 @@ class DuplicatesSeacher:
         else:
             print(f'There is no empty directory in <{target_dir}>')
 
+    def create_log_file(self):
+        filename = datetime.now().strftime('ds-%Y%m%d-%H%M%S.log')
+        try:
+            return open(filename, 'w')
+        except IOError:
+            return None
 
 if __name__ == '__main__':
 
 
     argparser = create_parser()
     #Нужно сделать проверку, что директории не являются вложенными (или идентичными)
-    args = argparser.parse_args(['./test', './test (копия)', '-r'])
+    # args = argparser.parse_args(['./test', './test (копия)', '-r'])
+    args = argparser.parse_args(['./test', './test (копия)'])
     print(args)
     print('This is a program for duplicates searching. Directories for searching:\n')
     ds = DuplicatesSeacher()
@@ -578,7 +585,17 @@ if __name__ == '__main__':
         ds.remove_duplicates(duplicates_to_remove)
         for d in target_dirs:
             ds.remove_empty_directories(d)
-
+    f = ds.create_log_file()
+    if f:
+        f.write('Target directories for duplicate search:\n')
+        f.write('\n'.join(['{0:>{2}}. {1}'.format(i+1, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
+        f.write('Duplicates found:\n')
+        for s in sorted(duplicates, reverse=True):
+            for d in duplicates[s]:
+                for key, value in d.items():
+                    for v in value:
+                        f.write(f'{key};{ds.make_readable(s)};{v}\n')
+        f.close()
     # ======================old============================
     # total_time = time.perf_counter() - time_start
     # print(
