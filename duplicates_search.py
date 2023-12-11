@@ -86,7 +86,7 @@ class DuplicatesSeacher:
     #         content['dirs'] += self.get_paths(root, dirs)
     #     return content
 
-    def get_directory_content(self, _dirs: list) -> dict:
+    def get_directories_content(self, _dirs: list) -> dict:
         list_of_files = []
         list_of_dirs = []
         for d in _dirs:
@@ -276,8 +276,7 @@ class DuplicatesSeacher:
     #     return '\n'.join(result)
         
     
-    #Неэффективный алгоритм, конечно, удаляет единичные значения, но может делать повторную работу,
-    # если, к примеру, два файла имеют одинаковые первый чанк данных, но разный размер.
+
     def find_duplicates_new(self, sizes_by_files: dict):
 
         files_by_size = dict()
@@ -358,9 +357,8 @@ class DuplicatesSeacher:
                 items_count, self.make_readable(size_of_items)) 
         ]
 
-    #Изменить название, так как сейчас метод ищет дубликаты в различных директориях
-    def find_duplicates_in_directory(self, _dirs: list):
-        dir_content = self.get_directory_content(_dirs)
+    def find_duplicates_in_directories(self, _dirs: list):
+        dir_content = self.get_directories_content(_dirs)
         files = dir_content['files']
         files_count = len(dir_content['files'])
         size_of_files = sum(list(dir_content['files'].values()))
@@ -538,7 +536,7 @@ if __name__ == '__main__':
     for d in target_dirs:
         print(os.path.abspath(d))
     # time_start = time.perf_counter()
-    duplicates = ds.find_duplicates_in_directory(target_dirs)
+    duplicates = ds.find_duplicates_in_directories(target_dirs)
     # ds.create_report(duplicates, 'duplicates.csv')
     # ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
     # duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
