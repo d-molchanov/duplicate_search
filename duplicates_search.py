@@ -275,7 +275,9 @@ class DuplicatesSeacher:
                     result.append(f'{s}\t{k}\t{v}')
         return '\n'.join(result)
         
-        
+    
+    #Неэффективный алгоритм, конечно, удаляет единичные значения, но может делать повторную работу,
+    # если, к примеру, два файла имеют одинаковые первый чанк данных, но разный размер.
     def find_duplicates_new(self, sizes_by_files: dict):
 
         files_by_size = dict()
@@ -296,25 +298,18 @@ class DuplicatesSeacher:
         files_by_hash = self.get_files_of_equal_hash(
             duplicates_by_first_block_hash, self.get_item_hash)
         duplicates_by_hash = self.remove_items_with_one_value(files_by_hash)
-        
-        # duplicates = {(k, sizes_by_files[v[0]]): v for k, v in duplicates_by_hash.items()}
-        duplicates = dict()
-        for key, value in duplicates_by_hash.items():
-            if sizes_by_files[value[0]] in duplicates:
-                duplicates[sizes_by_files[value[0]]].append({key:value})
-            else:
-                duplicates[sizes_by_files[value[0]]] = [{key:value}]
 
-        # return duplicates_by_hash
-        # for key, value in duplicates.items():
-        #     print(key, end='\t')
-        #     for v in value:
-        #         for i, j in v.items():
-        #             print(i)
-        #             for a in j:
-        #                 print(f'\t{a}')
-        # print(duplicates)
-        return duplicates
+        # for key, value in duplicates_by_hash.items():
+        #     print(sizes_by_files[value[0]], key, value)
+        # print('\n')
+        # sorted_dupl = self.sort_duplicates_by_size(duplicates_by_hash, sizes_by_files)
+        # for key, value in sorted_dupl:
+        #     print(sizes_by_files[value[0]], key, value)
+        return duplicates_by_hash
+        
+
+    def sort_duplicates_by_size(self, duplicates: list, sizes_by_files: list) -> list:
+        return sorted(duplicates.items(), key=lambda i: sizes_by_files[i[1][0]], reverse=True)    
 
     def get_duplicates_to_remove(self, duplicates: dict) -> dict:
         result = dict()
@@ -349,7 +344,7 @@ class DuplicatesSeacher:
         return {key: value for key, value in 
             input_dict.items() if value != None}
 
-
+    #Изменить название, так как сейчас метод ищет дубликаты в различных директориях
     def find_duplicates_in_directory(self, _dirs: list):
         dir_content = self.get_directory_content_new(_dirs)
         files = dir_content['files']
@@ -531,16 +526,17 @@ if __name__ == '__main__':
         print(os.path.abspath(d))
     # time_start = time.perf_counter()
     duplicates = ds.find_duplicates_in_directory(target_dirs)
-    ds.create_report(duplicates, 'duplicates.csv')
+    # ds.create_report(duplicates, 'duplicates.csv')
     # ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
-    duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
-    ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
+    # duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
+    # ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
 
     if args.remove:
         ds.remove_duplicates(duplicates_to_remove)
         for d in target_dirs:
             ds.remove_empty_directories(d)
-    f = ds.create_log_file()
+    # f = ds.create_log_file()
+    f = None
     if f:
         f.write('Target directories for duplicate search:\n')
         f.write('\n'.join(['{0:>{2}}. {1}'.format(i+1, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
