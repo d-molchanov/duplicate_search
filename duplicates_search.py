@@ -79,14 +79,14 @@ class DuplicatesSeacher:
             subdirs += self.get_paths(root, dirs)
         return (files, subdirs)
 
-    def get_directory_content(self, _dir: str):
-        content = {'files': [], 'dirs': []}
-        for root, dirs, filenames in os.walk(_dir):
-            content['files'] += self.get_paths(root, filenames)
-            content['dirs'] += self.get_paths(root, dirs)
-        return content
+    # def get_directory_content_old(self, _dir: str):
+    #     content = {'files': [], 'dirs': []}
+    #     for root, dirs, filenames in os.walk(_dir):
+    #         content['files'] += self.get_paths(root, filenames)
+    #         content['dirs'] += self.get_paths(root, dirs)
+    #     return content
 
-    def get_directory_content_new(self, _dirs: list) -> dict:
+    def get_directory_content(self, _dirs: list) -> dict:
         list_of_files = []
         list_of_dirs = []
         for d in _dirs:
@@ -95,7 +95,7 @@ class DuplicatesSeacher:
                 list_of_dirs.extend(self.get_paths(root, dirs))
         files = self.get_sizes_by_filenames(list_of_files)
         dirs = self.get_sizes_by_filenames(list_of_dirs)
-        
+
         return {'files': self.remove_none_values(files),
                 'dirs': self.remove_none_values(dirs)}
 
@@ -184,9 +184,9 @@ class DuplicatesSeacher:
 
     # def get_directory_info_new(self, files: dict, dirs: dict)
 
-    def print_dict(self, input_dict):
-        for i, (k, v) in enumerate(input_dict.items()):
-            print(f'{i+1}:\t{k}\t{v}')
+    # def print_dict(self, input_dict):
+    #     for i, (k, v) in enumerate(input_dict.items()):
+    #         print(f'{i+1}:\t{k}\t{v}')
 
     def get_count_and_sizes_of_duplicates(
         self, input_dict: dict, dict_with_sizes: dict):
@@ -199,37 +199,37 @@ class DuplicatesSeacher:
         return (count, total_size)
 
 
-    def print_duplicates_info(self, duplicates: dict, 
-        sizes_by_files: dict, dir_info: dict, title: str):
-        dc, ds = self.get_count_and_sizes_of_duplicates(
-            duplicates, sizes_by_files)
-        print('{0}\t\t{1} / {2} / {3} %'.format(
-            title, dc, self.make_readable(ds), 
-            round(ds/dir_info['size_of_files']*100, 2)))
+    # def print_duplicates_info(self, duplicates: dict, 
+    #     sizes_by_files: dict, dir_info: dict, title: str):
+    #     dc, ds = self.get_count_and_sizes_of_duplicates(
+    #         duplicates, sizes_by_files)
+    #     print('{0}\t\t{1} / {2} / {3} %'.format(
+    #         title, dc, self.make_readable(ds), 
+    #         round(ds/dir_info['size_of_files']*100, 2)))
 
-    def print_duplicates_info_new(self, duplicates: dict, 
-        sizes_by_files: dict, size_of_files: int, title: str):
-        dc, ds = self.get_count_and_sizes_of_duplicates(
-            duplicates, sizes_by_files)
-        print('{0}\t\t{1} / {2} / {3} %'.format(
-            title, dc, self.make_readable(ds), 
-            round(ds/size_of_files*100, 2)))
+    # def print_duplicates_info_new(self, duplicates: dict, 
+    #     sizes_by_files: dict, size_of_files: int, title: str):
+    #     dc, ds = self.get_count_and_sizes_of_duplicates(
+    #         duplicates, sizes_by_files)
+    #     print('{0}\t\t{1} / {2} / {3} %'.format(
+    #         title, dc, self.make_readable(ds), 
+    #         round(ds/size_of_files*100, 2)))
 
-    def print_dir_info(self, dir_info):
-        print(f'Current directory:\t\t<{dir_info["directory"]}>')
-        dir_info['items_count'] = (
-            dir_info['files_count'] + dir_info['dirs_count'])
-        dir_info['size_of_items'] = (
-            dir_info['size_of_files'] + dir_info['size_of_dirs'])
-        print(' / '.join((
-            f'Files:\t\t\t\t\t{dir_info["files_count"]}',
-            f'{self.make_readable(dir_info["size_of_files"])}')))
-        print(' / '.join((
-            f'Directories:\t\t\t{dir_info["dirs_count"]}',
-            f'{self.make_readable(dir_info["size_of_dirs"])}')))
-        print(' / '.join((
-            f'Total items:\t\t\t{dir_info["items_count"]}',
-            f'{self.make_readable(dir_info["size_of_items"])}')))
+    # def print_dir_info(self, dir_info):
+    #     print(f'Current directory:\t\t<{dir_info["directory"]}>')
+    #     dir_info['items_count'] = (
+    #         dir_info['files_count'] + dir_info['dirs_count'])
+    #     dir_info['size_of_items'] = (
+    #         dir_info['size_of_files'] + dir_info['size_of_dirs'])
+    #     print(' / '.join((
+    #         f'Files:\t\t\t\t\t{dir_info["files_count"]}',
+    #         f'{self.make_readable(dir_info["size_of_files"])}')))
+    #     print(' / '.join((
+    #         f'Directories:\t\t\t{dir_info["dirs_count"]}',
+    #         f'{self.make_readable(dir_info["size_of_dirs"])}')))
+    #     print(' / '.join((
+    #         f'Total items:\t\t\t{dir_info["items_count"]}',
+    #         f'{self.make_readable(dir_info["size_of_items"])}')))
 
     def sort_files_by_size(self, input_dict: dict, sizes_by_files: dict):
         return {sizes_by_files[v[0]]:v for v in input_dict.values()}
@@ -258,22 +258,22 @@ class DuplicatesSeacher:
                 except FileNotFoundError:
                     print(f'FileNotFoundError with <{f}>: no such file or directory.')
 
-    def print_info_for_removing_files(self, files: dict, 
-        sizes_by_files: dict):
-        temp = dict()
-        for key, value in files.items():
-            size = sizes_by_files[value[0]]
-            if size in temp:
-                temp[size] += (key, value)
-            else:
-                temp[size] = [(key, value)]
-        sizes = sorted(temp.keys(), reverse=True)
-        result = []
-        for s in sizes:
-            for k, value in temp[s]:
-                for v in value:
-                    result.append(f'{s}\t{k}\t{v}')
-        return '\n'.join(result)
+    # def print_info_for_removing_files(self, files: dict, 
+    #     sizes_by_files: dict):
+    #     temp = dict()
+    #     for key, value in files.items():
+    #         size = sizes_by_files[value[0]]
+    #         if size in temp:
+    #             temp[size] += (key, value)
+    #         else:
+    #             temp[size] = [(key, value)]
+    #     sizes = sorted(temp.keys(), reverse=True)
+    #     result = []
+    #     for s in sizes:
+    #         for k, value in temp[s]:
+    #             for v in value:
+    #                 result.append(f'{s}\t{k}\t{v}')
+    #     return '\n'.join(result)
         
     
     #Неэффективный алгоритм, конечно, удаляет единичные значения, но может делать повторную работу,
@@ -344,9 +344,23 @@ class DuplicatesSeacher:
         return {key: value for key, value in 
             input_dict.items() if value != None}
 
+    def str_directories_stats(
+        self, files_count: int, size_of_files: int,
+        dirs_count: int, size_of_dirs: int) -> list:
+        items_count = files_count + dirs_count
+        size_of_items = size_of_files + size_of_dirs
+        return [
+            'Files:       {} / {}'.format(
+                files_count, self.make_readable(size_of_files)), 
+            'Directories: {} / {}'.format(
+                dirs_count, self.make_readable(size_of_dirs)), 
+            'Total items: {} / {}'.format(
+                items_count, self.make_readable(size_of_items)) 
+        ]
+
     #Изменить название, так как сейчас метод ищет дубликаты в различных директориях
     def find_duplicates_in_directory(self, _dirs: list):
-        dir_content = self.get_directory_content_new(_dirs)
+        dir_content = self.get_directory_content(_dirs)
         files = dir_content['files']
         files_count = len(dir_content['files'])
         size_of_files = sum(list(dir_content['files'].values()))
@@ -354,23 +368,22 @@ class DuplicatesSeacher:
         dirs_count = len(dir_content['dirs'])
         size_of_dirs = sum(list(dir_content['dirs'].values()))
 
-        items_count = files_count + dirs_count
-        size_of_items = size_of_files + size_of_dirs
+        # items_count = files_count + dirs_count
+        # size_of_items = size_of_files + size_of_dirs
 
-        # print(f'Current directory:\t\t{os.path.abspath(_dir)}')
-        print(' / '.join((
-            f'Files:\t\t\t\t\t{files_count}',
-            f'{self.make_readable(size_of_files)}')))
-        print(' / '.join((
-            f'Directories:\t\t\t{dirs_count}',
-            f'{self.make_readable(size_of_dirs)}')))
-        print(' / '.join((
-            f'Total items:\t\t\t{items_count}',
-            f'{self.make_readable(size_of_items)}')))
+        print('\n'.join(self.str_directories_stats(
+            files_count, size_of_files, dirs_count, size_of_dirs)))
+        # print(' / '.join((
+        #     'Files:{:>9}'.format(files_count),
+        #     f'{self.make_readable(size_of_files)}')))
+        # print(' / '.join((
+        #     f'Directories: {dirs_count}',
+        #     f'{self.make_readable(size_of_dirs)}')))
+        # print(' / '.join((
+        #     f'Total items: {items_count}',
+        #     f'{self.make_readable(size_of_items)}')))
 
         duplicates = self.find_duplicates_new(files)
-        # self.print_duplicates_info_new(duplicates, files, 
-        #     size_of_files, 'Duplicates:\t\t')
 
         return duplicates
         
