@@ -37,24 +37,26 @@ class DuplicatesSeacher:
     #             result = '-1'
     #     return result 
 
+    # Зачем первая проверка на 0?
     def make_readable(self, size_in_bytes):
         if size_in_bytes == 0:
             return '0 B'
+        # number_of_digits = len(str(size_in_bytes))
         n = size_in_bytes
         number_of_digits = 0
         while n > 0:
             n //= 10
             number_of_digits += 1
         if number_of_digits > 15:
-            return f'{round(size_in_bytes / 10**15, 3)} PB'
+            return f'{size_in_bytes / 10**15:.3f} PB'
         elif number_of_digits > 12:
-            return f'{round(size_in_bytes / 10**12, 3)} TB'
+            return f'{size_in_bytes / 10**12:.3f} TB'
         elif number_of_digits > 9:
-            return f'{round(size_in_bytes / 10**9, 3)} GB'
+            return f'{size_in_bytes / 10**9:.3f} GB'
         elif number_of_digits > 6:
-            return f'{round(size_in_bytes / 10**6, 3)} MB'
+            return f'{size_in_bytes / 10**6:.3f} MB'
         elif number_of_digits > 3:
-            return f'{round(size_in_bytes / 10**3, 3)} kB'
+            return f'{size_in_bytes / 10**3:.3f} kB'
         else:
             return f'{size_in_bytes} B'
 
@@ -366,10 +368,10 @@ class DuplicatesSeacher:
         dir_content = self.get_directories_content(_dirs)
         files = dir_content['files']
         files_count = len(dir_content['files'])
-        size_of_files = sum(list(dir_content['files'].values()))
+        size_of_files = sum(dir_content['files'].values())
 
         dirs_count = len(dir_content['dirs'])
-        size_of_dirs = sum(list(dir_content['dirs'].values()))
+        size_of_dirs = sum(dir_content['dirs'].values())
 
         # items_count = files_count + dirs_count
         # size_of_items = size_of_files + size_of_dirs
@@ -388,8 +390,8 @@ class DuplicatesSeacher:
 
         duplicates = self.find_duplicates_new(files)
         duplicates_with_sizes = self.get_duplicates_sizes(duplicates, files)
-        print(*sorted(duplicates_with_sizes, key=lambda d: d['size']), sep='\n')
-        return duplicates
+        # print(*sorted(duplicates_with_sizes, key=lambda d: d['size']), sep='\n')
+        return duplicates_with_sizes
         
     def create_report(self, duplicates, filename):
         with open(filename, 'w') as f:
