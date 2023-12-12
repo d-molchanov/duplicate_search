@@ -71,13 +71,13 @@ class DuplicatesSeacher:
         return [os.path.join(_root, p) for p in _path]
 
 
-    def get_files_and_subdirs(self, dir: str):
-        files = []
-        subdirs = []
-        for root, dirs, filenames in os.walk(dir):
-            files += self.get_paths(root, filenames)
-            subdirs += self.get_paths(root, dirs)
-        return (files, subdirs)
+    # def get_files_and_subdirs(self, dir: str):
+    #     files = []
+    #     subdirs = []
+    #     for root, dirs, filenames in os.walk(dir):
+    #         files += self.get_paths(root, filenames)
+    #         subdirs += self.get_paths(root, dirs)
+    #     return (files, subdirs)
 
     # def get_directory_content_old(self, _dir: str):
     #     content = {'files': [], 'dirs': []}
@@ -188,15 +188,15 @@ class DuplicatesSeacher:
     #     for i, (k, v) in enumerate(input_dict.items()):
     #         print(f'{i+1}:\t{k}\t{v}')
 
-    def get_count_and_sizes_of_duplicates(
-        self, input_dict: dict, dict_with_sizes: dict):
-        total_size = 0
-        count = 0
-        for value in input_dict.values():
-            amount = len(value)
-            count += amount
-            total_size += (dict_with_sizes[value[0]]*amount)
-        return (count, total_size)
+    # def get_count_and_sizes_of_duplicates(
+    #     self, input_dict: dict, dict_with_sizes: dict):
+    #     total_size = 0
+    #     count = 0
+    #     for value in input_dict.values():
+    #         amount = len(value)
+    #         count += amount
+    #         total_size += (dict_with_sizes[value[0]]*amount)
+    #     return (count, total_size)
 
 
     # def print_duplicates_info(self, duplicates: dict, 
@@ -244,9 +244,9 @@ class DuplicatesSeacher:
         except IOError:
             print(f'IOError with <{filename}>: cannot write data.')
 
-    def get_files_to_remove(self, duplicates: dict):
-        return {k:sorted(v, reverse=True)[1:] for 
-        k, v in duplicates.items()}
+    # def get_files_to_remove(self, duplicates: dict):
+    #     return {k:sorted(v, reverse=True)[1:] for 
+    #     k, v in duplicates.items()}
 
     def remove_files(self, files: dict):
         temp_list = [f for value in files.values() for f in value]
@@ -278,7 +278,6 @@ class DuplicatesSeacher:
     
 
     def find_duplicates_new(self, sizes_by_files: dict):
-
         files_by_size = dict()
         for key, value in sizes_by_files.items():
             if value in files_by_size:
@@ -307,8 +306,8 @@ class DuplicatesSeacher:
         return duplicates_by_hash
         
 
-    def sort_duplicates_by_size(self, duplicates: list, sizes_by_files: list) -> list:
-        return sorted(duplicates.items(), key=lambda i: sizes_by_files[i[1][0]], reverse=True)    
+    # def sort_duplicates_by_size(self, duplicates: list, sizes_by_files: list) -> list:
+    #     return sorted(duplicates.items(), key=lambda i: sizes_by_files[i[1][0]], reverse=True)    
 
     def get_duplicates_to_remove(self, duplicates: dict) -> dict:
         result = dict()
@@ -357,7 +356,13 @@ class DuplicatesSeacher:
                 items_count, self.make_readable(size_of_items)) 
         ]
 
-    def find_duplicates_in_directories(self, _dirs: list):
+    def get_duplicates_sizes(self, duplicates: dict, sizes_by_files: dict) -> list:
+        result = []
+        for key, value in duplicates.items():
+            result.append({'hash': key, 'files': value, 'size': sizes_by_files[value[0]]})
+        return result
+
+    def find_duplicates_in_directories(self, _dirs: list) -> list:
         dir_content = self.get_directories_content(_dirs)
         files = dir_content['files']
         files_count = len(dir_content['files'])
@@ -382,7 +387,8 @@ class DuplicatesSeacher:
         #     f'{self.make_readable(size_of_items)}')))
 
         duplicates = self.find_duplicates_new(files)
-
+        duplicates_with_sizes = self.get_duplicates_sizes(duplicates, files)
+        print(*sorted(duplicates_with_sizes, key=lambda d: d['size']), sep='\n')
         return duplicates
         
     def create_report(self, duplicates, filename):
