@@ -350,6 +350,7 @@ class DuplicatesSeacher:
         items_count = files_count + dirs_count
         size_of_items = size_of_files + size_of_dirs
         return [
+            # f'Files:       {files_count} / {self.make_readable(size_of_files)}', 
             'Files:       {} / {}'.format(
                 files_count, self.make_readable(size_of_files)), 
             'Directories: {} / {}'.format(
@@ -393,6 +394,13 @@ class DuplicatesSeacher:
         # print(*sorted(duplicates_with_sizes, key=lambda d: d['size']), sep='\n')
         return duplicates_with_sizes
         
+    def convert_to_table(self, duplicates_with_sizes: list) -> list:
+        result = []
+        for d in duplicates_with_sizes:
+            for f in d['files']:
+                result.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'removed': False, 'error': ''})
+        return result
+
     def create_report(self, duplicates, filename):
         with open(filename, 'w') as f:
             for s in sorted(duplicates, reverse=True):
@@ -545,6 +553,7 @@ if __name__ == '__main__':
         print(os.path.abspath(d))
     # time_start = time.perf_counter()
     duplicates = ds.find_duplicates_in_directories(target_dirs)
+    print(*ds.convert_to_table(duplicates), sep='\n')
     # ds.create_report(duplicates, 'duplicates.csv')
     # ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
     # duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
