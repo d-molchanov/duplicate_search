@@ -398,7 +398,7 @@ class DuplicatesSeacher:
         result = []
         for d in duplicates_with_sizes:
             for f in d['files']:
-                result.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'removed': False, 'error': ''})
+                result.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'removed': False, 'note': ''})
         return result
 
     def create_report(self, duplicates, filename):
@@ -538,6 +538,30 @@ class DuplicatesSeacher:
         except IOError:
             return None
 
+    def list_duplicates(self, target_dirs, duplicates, remove=False) -> None:
+        print(duplicates[0])
+        table = self.convert_to_table(duplicates)
+        print(*table, sep='\n')
+        sep = ';'
+        columns = [
+            'path',
+            'hash',
+            'size',
+            'removed',
+            'note'
+        ]
+        line_mask = sep.join([f'%({c})s' for c in columns])
+        f = self.create_log_file()
+        if f:
+            f.write(f'{sep}Target directories for duplicate search:\n')
+            f.write('\n'.join(['{0:>{3}}{1}{2}'.format(i+1, sep, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
+            f.write(f'\n{sep}Duplicates found:\n')
+            f.write(f'{sep}{line_mask % {k:k for k in columns}}\n')
+            for i, line in enumerate(sorted(table, key=lambda d: d['size'], reverse=True)):
+                f.write(f'{i+1}{sep}{line_mask % line}\n')
+            f.close()
+
+
 if __name__ == '__main__':
 
 
@@ -553,28 +577,14 @@ if __name__ == '__main__':
         print(os.path.abspath(d))
     # time_start = time.perf_counter()
     duplicates = ds.find_duplicates_in_directories(target_dirs)
-    print(*ds.convert_to_table(duplicates), sep='\n')
-    # ds.create_report(duplicates, 'duplicates.csv')
-    # ds.create_list_for_deleting(duplicates, 'deleting.csv', detailed=True)
-    # duplicates_to_remove = ds.get_duplicates_to_remove(duplicates)
-    # ds.create_report(duplicates_to_remove, 'd_to_remove.csv')
+    ds.list_duplicates(target_dirs, duplicates)
+    
 
     if args.remove:
         ds.remove_duplicates(duplicates_to_remove)
         for d in target_dirs:
             ds.remove_empty_directories(d)
-    # f = ds.create_log_file()
-    f = None
-    if f:
-        f.write('Target directories for duplicate search:\n')
-        f.write('\n'.join(['{0:>{2}}. {1}'.format(i+1, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
-        f.write('\nDuplicates found:\n')
-        for s in sorted(duplicates, reverse=True):
-            for d in duplicates[s]:
-                for key, value in d.items():
-                    for v in value:
-                        f.write(f'{key};{ds.make_readable(s)};{v}\n')
-        f.close()
+    
     # ======================old============================
     # total_time = time.perf_counter() - time_start
     # print(
