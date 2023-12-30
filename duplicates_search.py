@@ -538,28 +538,64 @@ class DuplicatesSeacher:
         except IOError:
             return None
 
-    def list_duplicates(self, target_dirs, duplicates, remove=False) -> None:
-        print(duplicates[0])
+    def list_duplicates(self, target_dirs, duplicates, remove_duplicates=False) -> None:
+        # print('duplicate 0:', duplicates[0], sep='\n')
         table = self.convert_to_table(duplicates)
-        print(*table, sep='\n')
+        # print('line 0:', table[0], sep='\n')
+        # print(*table, sep='\n')
         sep = ';'
         columns = [
             'path',
             'hash',
             'size',
-            'removed',
-            'note'
+            'status'
         ]
         line_mask = sep.join([f'%({c})s' for c in columns])
-        f = self.create_log_file()
-        if f:
-            f.write(f'{sep}Target directories for duplicate search:\n')
-            f.write('\n'.join(['{0:>{3}}{1}{2}'.format(i+1, sep, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
-            f.write(f'\n{sep}Duplicates found:\n')
-            f.write(f'{sep}{line_mask % {k:k for k in columns}}\n')
+        w = self.create_log_file()
+        if w:
+            w.write(f'{sep}Target directories for duplicate search:\n')
+            w.write('\n'.join(['{0:>{3}}{1}{2}'.format(i+1, sep, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
+            w.write(f'\n{sep}Duplicates found:\n')
+            w.write(f'{sep}{line_mask % {k:k for k in columns}}\n')
+            if remove_duplicates:
+                table = []
+                for d in duplicates:
+                    table.append({'hash': d['hash'], 'path': d['files'][0], 'size': d['size'], 'status': 'Original'})
+                    for f in d['files'][1:]:
+                        status = remove_file_new(f)
+                        table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': status})
+                        # try:
+                        #     os.remove(f)
+                        #     table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': 'Removed'})
+                        # except FileNotFoundError:
+                        #     print(f'<{f}> does not exist.')
+                        #     table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': 'File not found'})
+                        # except PermissionError:
+                        #     print(f'<{f}> is busy.')
+                        #     table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': 'Permission denied'})
             for i, line in enumerate(sorted(table, key=lambda d: d['size'], reverse=True)):
-                f.write(f'{i+1}{sep}{line_mask % line}\n')
-            f.close()
+                w.write(f'{i+1}{sep}{line_mask % line}\n')
+            w.close()
+
+    #Обработать None
+    def remove_file_new(self, filename: str) -> None:
+        if os.path.isfile(filename):
+            try:
+                os.remove(filename)
+                return 'Removed'
+            except FileNotFoundError:
+                # print(f'<{filename}> does not exist.')
+                return 'File not found'
+            except PermissionError:
+                # print(f'<{filename}> is busy.')
+                return 'Permission denied'
+
+    # def remove_duplicates(self, duplicates: dict) -> None:
+    #     for size, dicts in duplicates.items():
+    #         for d in dicts:
+    #             for _hash, _path in d.items():
+    #                 for p in _path:
+    #                     self.remove_file(p)
 
 
 if __name__ == '__main__':
@@ -567,8 +603,8 @@ if __name__ == '__main__':
 
     argparser = create_parser()
     #Нужно сделать проверку, что директории не являются вложенными (или идентичными)
-    # args = argparser.parse_args(['./test', './test (копия)', '-r'])
-    args = argparser.parse_args(['./test', './test (копия)'])
+    args = argparser.parse_args(['./test', './test (копия)', '-r'])
+    # args = argparser.parse_args(['./test', './test (копия)'])
     print(args)
     print('This is a program for duplicates searching. Directories for searching:\n')
     ds = DuplicatesSeacher()
@@ -577,14 +613,15 @@ if __name__ == '__main__':
         print(os.path.abspath(d))
     # time_start = time.perf_counter()
     duplicates = ds.find_duplicates_in_directories(target_dirs)
-    ds.list_duplicates(target_dirs, duplicates)
     
-
+    rd = False
     if args.remove:
-        ds.remove_duplicates(duplicates_to_remove)
-        for d in target_dirs:
-            ds.remove_empty_directories(d)
+        rd = True
+        # ds.remove_duplicates(duplicates_to_remove)
+        # for d in target_dirs:
+        #     ds.remove_empty_directories(d)
     
+    ds.list_duplicates(target_dirs, duplicates, remove_duplicates=rd)
     # ======================old============================
     # total_time = time.perf_counter() - time_start
     # print(
