@@ -557,22 +557,18 @@ class DuplicatesSeacher:
             w.write('\n'.join(['{0:>{3}}{1}{2}'.format(i+1, sep, d, len(target_dirs)) for i, d in enumerate(target_dirs)]))
             w.write(f'\n{sep}Duplicates found:\n')
             w.write(f'{sep}{line_mask % {k:k for k in columns}}\n')
+            table = []
             if remove_duplicates:
-                table = []
                 for d in duplicates:
                     table.append({'hash': d['hash'], 'path': d['files'][0], 'size': d['size'], 'status': 'Original'})
                     for f in d['files'][1:]:
                         status = remove_file_new(f)
                         table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': status})
-                        # try:
-                        #     os.remove(f)
-                        #     table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': 'Removed'})
-                        # except FileNotFoundError:
-                        #     print(f'<{f}> does not exist.')
-                        #     table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': 'File not found'})
-                        # except PermissionError:
-                        #     print(f'<{f}> is busy.')
-                        #     table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': 'Permission denied'})
+            else:
+                for d in duplicates:
+                    table.append({'hash': d['hash'], 'path': d['files'][0], 'size': d['size'], 'status': 'Original'})
+                    for f in d['files'][1:]:
+                        table.append({'hash': d['hash'], 'path': f, 'size': d['size'], 'status': 'Duplicate'})
             for i, line in enumerate(sorted(table, key=lambda d: d['size'], reverse=True)):
                 w.write(f'{i+1}{sep}{line_mask % line}\n')
             w.close()
@@ -584,18 +580,9 @@ class DuplicatesSeacher:
                 os.remove(filename)
                 return 'Removed'
             except FileNotFoundError:
-                # print(f'<{filename}> does not exist.')
                 return 'File not found'
             except PermissionError:
-                # print(f'<{filename}> is busy.')
                 return 'Permission denied'
-
-    # def remove_duplicates(self, duplicates: dict) -> None:
-    #     for size, dicts in duplicates.items():
-    #         for d in dicts:
-    #             for _hash, _path in d.items():
-    #                 for p in _path:
-    #                     self.remove_file(p)
 
 
 if __name__ == '__main__':
@@ -603,8 +590,8 @@ if __name__ == '__main__':
 
     argparser = create_parser()
     #Нужно сделать проверку, что директории не являются вложенными (или идентичными)
-    args = argparser.parse_args(['./test', './test (копия)', '-r'])
-    # args = argparser.parse_args(['./test', './test (копия)'])
+    # args = argparser.parse_args(['./test', './test (копия)', '-r'])
+    args = argparser.parse_args(['./test', './test (копия)'])
     print(args)
     print('This is a program for duplicates searching. Directories for searching:\n')
     ds = DuplicatesSeacher()
