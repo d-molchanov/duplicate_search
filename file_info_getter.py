@@ -41,7 +41,7 @@ class FileInfoGetter:
 
 def test():
     path = Path('./duplicates_searcher.py')
-    # path = './test.txt'
+    # path = Path('./test.txt')
     fig = FileInfoGetter()
     try:
         file_info = fig.get_file_info(path)

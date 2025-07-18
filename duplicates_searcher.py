@@ -8,11 +8,33 @@ from typing import List
 from typing import Tuple
 from pathlib import Path
 
-class DuplicatesSeacher:
+try:
+    if hasattr(Path, 'walk'):
+        def walk(top, topdown=True, onerror=None, follow_symlinks=False):
+            yield from Path(top).walk(topdown, onerror, follow_symlinks)
+    else:
+        raise ImportError('Path.walk is not available.')
+except (ImportError, AttributeError):
+    walk = os.walk
+
+class DuplicatesSearcher:
 
 
     def __init__(self) -> None:
         self._directories = []
+
+    @staticmethod
+    def get_filepaths(directory: str | Path, subdirectories=True):
+        path = Path(directory)
+        result = {}
+        for root, dirs, files in walk(path.resolve()):
+            # files = self.convert_files_to_paths(root, files)
+            result[root] = files
+            if not subdirectories:
+                return result
+        return result
+
+
 
     def filter_subdirectories(self, list_of_dirs: List[Path]) -> List[Path]:
         # ! Only for less then three directories
@@ -667,3 +689,11 @@ class DuplicatesSeacher:
                 return 'File not found'
             except PermissionError:
                 return 'Permission denied'
+
+def test():
+    ds = DuplicatesSearcher()
+    data = ds.get_filepaths('.')
+    print(data)
+
+if __name__ == '__main__':
+    test()
