@@ -16,6 +16,7 @@ class FileInfo():
 
 class FileInfoGetter:
 
+    #Возможно, сделать проверку на PermissionError нужно здесь
     @staticmethod
     def get_file_info(path: Path) -> FileInfo:
         try:

@@ -7,6 +7,10 @@ from itertools import permutations
 from typing import List 
 from typing import Tuple
 from pathlib import Path
+import humanize
+
+from file_info_getter import FileInfoGetter
+from file_info_getter import FileInfo
 
 try:
     if hasattr(Path, 'walk'):
@@ -690,10 +694,104 @@ class DuplicatesSearcher:
             except PermissionError:
                 return 'Permission denied'
 
+#-------------------------------------------------------------
+def block_reader(file_obj, block_size):
+    while True:
+        block = file_obj.read(block_size)
+        if not block:
+            return
+        yield block
+
+def get_directory_content(path: Path) -> dict:
+    filepaths = []
+    for root, dirs, files in walk(path):
+        root = Path(root).resolve()
+        for f in files:
+            filepath = root / Path(f)
+            filepaths.append(FileInfoGetter.get_file_info(filepath))
+    return filepaths
+
+def group_by_size(files: list[FileInfo]) -> dict[FileInfo]:
+    result = {}
+    for f in files:
+        if f.size in result:
+            result[f.size].append(f)
+        else:
+            result[f.size] = [f]
+    return result
+
+def remove_items_with_one_value(files: dict[FileInfo]) -> dict[FileInfo]:
+    return {
+        key: value for key, value in files.items() if
+        isinstance(value, list) and len(value) > 1
+    }
+
+def get_file_hash(path, block_size=1024, only_first_block=False):
+    with path.open('rb') as f:
+        try:
+            hash_obj = hashlib.sha1()
+            for block in block_reader(f, block_size):
+                hash_obj.update(block)
+                if only_first_block:
+                    return hash_obj.hexdigest().lower() 
+            result = hash_obj.hexdigest().lower()
+        except IOError:
+            print(f'I/O error with {filename}')
+            result = '-1'
+    return result
+
+def group_by_hash(files: dict, only_first_block=False):
+    result = {}
+    for key, value in files.items():
+        for f in value:
+            file_hash = get_file_hash(f.path, only_first_block=only_first_block)
+            if file_hash in result:
+                result[file_hash].append(f)
+            else:
+                result[file_hash] = [f]
+    return result
+
+
+def get_directories_content_newest(directories: list[Path]) -> list[Path]:
+    filepaths = []
+    for d in directories:
+        files = get_directory_content(d)
+        files_count = len(files)
+        files_size = sum(f.size for f in files)
+        print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=True)}.')
+        print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=False)}.')
+        print(f'<{d}> contains {files_count} files: {files_size} B.')
+        filepaths += files
+    return filepaths
+
+
 def test():
     ds = DuplicatesSearcher()
     data = ds.get_filepaths('.')
     print(data)
 
+def test_2():
+    paths = [
+        './test',
+        './test (копия)',
+        './test (копия) (another copy)'
+    ]
+    files = get_directories_content_newest(paths)
+    grouped_by_size = group_by_size(files)
+    reduced_and_grouped_by_size = remove_items_with_one_value(grouped_by_size)
+    print(len(grouped_by_size), len(reduced_and_grouped_by_size))
+    grouped_by_first_block_hash = group_by_hash(reduced_and_grouped_by_size, only_first_block=True)
+    reduced_and_grouped_by_first_block_hash = remove_items_with_one_value(grouped_by_first_block_hash)
+    print(len(grouped_by_first_block_hash), len(reduced_and_grouped_by_first_block_hash))
+    grouped_by_hash = group_by_hash(reduced_and_grouped_by_first_block_hash)
+    grouped_by_hash_and_reduced = remove_items_with_one_value(grouped_by_hash)
+    # for k, v in grouped_by_size.items():
+    # for k, v in grouped_by_first_block_hash.items():
+    for k, v in grouped_by_hash.items():
+        print(k, *[f'{el.size}\t{el.path}' for el in v], sep='\n')
+        # print(k, v)
+    # print(*files, sep='\n')
+
 if __name__ == '__main__':
-    test()
+    # test()
+    test_2()
