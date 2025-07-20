@@ -776,6 +776,7 @@ def test_2():
         './test (копия)',
         './test (копия) (another copy)'
     ]
+    paths = ['./test']
     files = get_directories_content_newest(paths)
     grouped_by_size = group_by_size(files)
     reduced_and_grouped_by_size = remove_items_with_one_value(grouped_by_size)
