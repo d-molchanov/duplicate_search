@@ -775,12 +775,24 @@ class DuplicatesSearcher_New:
         filename = Path('.') / ts.strftime('%Y%m%d-%H%M%S.log')
         print(filename.resolve())
         fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
+        print(fieldnames)
+        translate = {
+            'atime': 'Access time',
+            'mtime': 'Modification time',
+            'ctime': 'Creation time',
+            'btime': 'Birth time'
+        }
+        names = [f if f not in translate else translate[f] for f in fieldnames]
+        print(names)
         try:
             with filename.open('w', encoding='utf-8', newline='') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames, delimiter=';')
+                writer = csv.DictWriter(csvfile, fieldnames=names, delimiter=';')
                 writer.writeheader()
                 for f in files:
-                    writer.writerow(asdict(f))
+                    file_dict = asdict(f)
+                    new_dict = {translate.get(k, k): v for  k, v in file_dict.items()}
+                    writer.writerow(new_dict)
+                    # writer.writerow(asdict(f))
         except Exception as e:
             print(e)
 
@@ -795,7 +807,7 @@ def test_2():
         './test (копия)',
         './test (копия) (another copy)'
     ]
-    paths = ['./test']
+    # paths = ['./test']
     ds = DuplicatesSearcher_New()
     files = ds.get_directories_content_newest(paths)
     grouped_by_size = ds.group_by_size(files)
