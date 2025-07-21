@@ -1,13 +1,16 @@
 import os
 import time
+import csv
 from datetime import datetime
 import hashlib
 from argparse import ArgumentParser
 from itertools import permutations
+from dataclasses import asdict
 from typing import List 
 from typing import Tuple
 from pathlib import Path
 import humanize
+import dataclasses
 
 from file_info_getter import FileInfoGetter
 from file_info_getter import FileInfo
@@ -695,75 +698,91 @@ class DuplicatesSearcher:
                 return 'Permission denied'
 
 #-------------------------------------------------------------
-def block_reader(file_obj, block_size):
-    while True:
-        block = file_obj.read(block_size)
-        if not block:
-            return
-        yield block
+class DuplicatesSearcher_New:
 
-def get_directory_content(path: Path) -> dict:
-    filepaths = []
-    for root, dirs, files in walk(path):
-        root = Path(root).resolve()
+    def block_reader(self, file_obj, block_size):
+        while True:
+            block = file_obj.read(block_size)
+            if not block:
+                return
+            yield block
+
+    def get_directory_content(self, path: Path) -> dict:
+        filepaths = []
+        for root, dirs, files in walk(path):
+            root = Path(root).resolve()
+            for f in files:
+                filepath = root / Path(f)
+                filepaths.append(FileInfoGetter.get_file_info(filepath))
+        return filepaths
+
+    def group_by_size(self, files: list[FileInfo]) -> dict[FileInfo]:
+        result = {}
         for f in files:
-            filepath = root / Path(f)
-            filepaths.append(FileInfoGetter.get_file_info(filepath))
-    return filepaths
-
-def group_by_size(files: list[FileInfo]) -> dict[FileInfo]:
-    result = {}
-    for f in files:
-        if f.size in result:
-            result[f.size].append(f)
-        else:
-            result[f.size] = [f]
-    return result
-
-def remove_items_with_one_value(files: dict[FileInfo]) -> dict[FileInfo]:
-    return {
-        key: value for key, value in files.items() if
-        isinstance(value, list) and len(value) > 1
-    }
-
-def get_file_hash(path, block_size=1024, only_first_block=False):
-    with path.open('rb') as f:
-        try:
-            hash_obj = hashlib.sha1()
-            for block in block_reader(f, block_size):
-                hash_obj.update(block)
-                if only_first_block:
-                    return hash_obj.hexdigest().lower() 
-            result = hash_obj.hexdigest().lower()
-        except IOError:
-            print(f'I/O error with {filename}')
-            result = '-1'
-    return result
-
-def group_by_hash(files: dict, only_first_block=False):
-    result = {}
-    for key, value in files.items():
-        for f in value:
-            file_hash = get_file_hash(f.path, only_first_block=only_first_block)
-            if file_hash in result:
-                result[file_hash].append(f)
+            if f.size in result:
+                result[f.size].append(f)
             else:
-                result[file_hash] = [f]
-    return result
+                result[f.size] = [f]
+        return result
+
+    def remove_items_with_one_value(self, files: dict[FileInfo]) -> dict[FileInfo]:
+        return {
+            key: value for key, value in files.items() if
+            isinstance(value, list) and len(value) > 1
+        }
+
+    def get_file_hash(self, path, block_size=1024, only_first_block=False):
+        with path.open('rb') as f:
+            try:
+                hash_obj = hashlib.sha1()
+                for block in self.block_reader(f, block_size):
+                    hash_obj.update(block)
+                    if only_first_block:
+                        return hash_obj.hexdigest().lower() 
+                result = hash_obj.hexdigest().lower()
+            except IOError:
+                print(f'I/O error with {filename}')
+                result = '-1'
+        return result
+
+    def group_by_hash(self, files: dict, only_first_block=False):
+        result = {}
+        for key, value in files.items():
+            for f in value:
+                file_hash = self.get_file_hash(f.path, only_first_block=only_first_block)
+                if file_hash in result:
+                    result[file_hash].append(f)
+                else:
+                    result[file_hash] = [f]
+        return result
 
 
-def get_directories_content_newest(directories: list[Path]) -> list[Path]:
-    filepaths = []
-    for d in directories:
-        files = get_directory_content(d)
-        files_count = len(files)
-        files_size = sum(f.size for f in files)
-        print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=True)}.')
-        print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=False)}.')
-        print(f'<{d}> contains {files_count} files: {files_size} B.')
-        filepaths += files
-    return filepaths
+    def get_directories_content_newest(self, directories: list[Path]) -> list[Path]:
+        filepaths = []
+        for d in directories:
+            files = self.get_directory_content(d)
+            files_count = len(files)
+            files_size = sum(f.size for f in files)
+            print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=True)}.')
+            print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=False)}.')
+            print(f'<{d}> contains {files_count} files: {files_size} B.')
+            filepaths += files
+        return filepaths
 
+    def export_file_infos(self, filename: Path, files: list[Path]) -> None:
+        ts = datetime.now()
+
+        filename = Path('.') / ts.strftime('%Y%m%d-%H%M%S.log')
+        print(filename.resolve())
+        fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
+        try:
+            with filename.open('w', encoding='utf-8', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames, delimiter=';')
+                writer.writeheader()
+                for f in files:
+                    writer.writerow(asdict(f))
+        except Exception as e:
+            print(e)
 
 def test():
     ds = DuplicatesSearcher()
@@ -777,21 +796,24 @@ def test_2():
         './test (копия) (another copy)'
     ]
     paths = ['./test']
-    files = get_directories_content_newest(paths)
-    grouped_by_size = group_by_size(files)
-    reduced_and_grouped_by_size = remove_items_with_one_value(grouped_by_size)
+    ds = DuplicatesSearcher_New()
+    files = ds.get_directories_content_newest(paths)
+    grouped_by_size = ds.group_by_size(files)
+    reduced_and_grouped_by_size = ds.remove_items_with_one_value(grouped_by_size)
     print(len(grouped_by_size), len(reduced_and_grouped_by_size))
-    grouped_by_first_block_hash = group_by_hash(reduced_and_grouped_by_size, only_first_block=True)
-    reduced_and_grouped_by_first_block_hash = remove_items_with_one_value(grouped_by_first_block_hash)
+    grouped_by_first_block_hash = ds.group_by_hash(reduced_and_grouped_by_size, only_first_block=True)
+    reduced_and_grouped_by_first_block_hash = ds.remove_items_with_one_value(grouped_by_first_block_hash)
     print(len(grouped_by_first_block_hash), len(reduced_and_grouped_by_first_block_hash))
-    grouped_by_hash = group_by_hash(reduced_and_grouped_by_first_block_hash)
-    grouped_by_hash_and_reduced = remove_items_with_one_value(grouped_by_hash)
+    grouped_by_hash = ds.group_by_hash(reduced_and_grouped_by_first_block_hash)
+    grouped_by_hash_and_reduced = ds.remove_items_with_one_value(grouped_by_hash)
     # for k, v in grouped_by_size.items():
     # for k, v in grouped_by_first_block_hash.items():
     for k, v in grouped_by_hash.items():
         print(k, *[f'{el.size}\t{el.path}' for el in v], sep='\n')
         # print(k, v)
     # print(*files, sep='\n')
+
+    ds.export_file_infos('', files)
 
 if __name__ == '__main__':
     # test()
