@@ -2,6 +2,7 @@ import os
 import time
 import csv
 from datetime import datetime
+import logging
 import hashlib
 from argparse import ArgumentParser
 from itertools import permutations
@@ -23,6 +24,11 @@ try:
         raise ImportError('Path.walk is not available.')
 except (ImportError, AttributeError):
     walk = os.walk
+
+logging.basicConfig(
+    format='%(asctime)s %(levelname)s:\t%(message)s',
+    level=logging.INFO
+)
 
 class DuplicatesSearcher:
 
@@ -769,13 +775,12 @@ class DuplicatesSearcher_New:
             filepaths += files
         return filepaths
 
-    def export_file_infos(self, filename: Path, files: list[Path]) -> None:
+    def export_file_infos(self, files: list[Path],  output_path: Path | None = None) -> None:
         ts = datetime.now()
-
-        filename = Path('.') / ts.strftime('%Y%m%d-%H%M%S.log')
-        print(filename.resolve())
+        if not output_path:
+            output_path = Path('.') / ts.strftime('%Y%m%d-%H%M%S.log')
+        logging.info('Start exporting to: %s', output_path.resolve())
         fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
-        print(fieldnames)
         translate = {
             'atime': 'Access time',
             'mtime': 'Modification time',
@@ -783,18 +788,17 @@ class DuplicatesSearcher_New:
             'btime': 'Birth time'
         }
         names = [f if f not in translate else translate[f] for f in fieldnames]
-        print(names)
         try:
-            with filename.open('w', encoding='utf-8', newline='') as csvfile:
+            with output_path.open('w', encoding='utf-8', newline='') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=names, delimiter=';')
                 writer.writeheader()
                 for f in files:
                     file_dict = asdict(f)
                     new_dict = {translate.get(k, k): v for  k, v in file_dict.items()}
                     writer.writerow(new_dict)
-                    # writer.writerow(asdict(f))
+                logging.info('Export complited')
         except Exception as e:
-            print(e)
+            logging.info('%s: %s', e.__class__.__name__, e)
 
 def test():
     ds = DuplicatesSearcher()
@@ -825,7 +829,7 @@ def test_2():
         # print(k, v)
     # print(*files, sep='\n')
 
-    ds.export_file_infos('', files)
+    ds.export_file_infos(files)
 
 if __name__ == '__main__':
     # test()
