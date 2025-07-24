@@ -769,9 +769,17 @@ class DuplicatesSearcher_New:
             files = self.get_directory_content(d)
             files_count = len(files)
             files_size = sum(f.size for f in files)
-            print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=True)}.')
-            print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=False)}.')
-            print(f'<{d}> contains {files_count} files: {files_size} B.')
+            # print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=True)}.')
+            # print(f'<{d}> contains {files_count} files: {humanize.naturalsize(files_size, binary=False)}.')
+            # print(f'<{d}> contains {files_count} files: {files_size} B.')
+            logging.info(
+                '`%s` contains %s files: %s',
+                d.resolve(), 
+                files_count, 
+                humanize.naturalsize(files_size, binary=False)
+                # humanize.naturalsize(files_size, binary=True)
+                # f'{files_size} B'
+            )
             filepaths += files
         return filepaths
 
@@ -779,7 +787,7 @@ class DuplicatesSearcher_New:
         ts = datetime.now()
         if not output_path:
             output_path = Path('.') / ts.strftime('%Y%m%d-%H%M%S.log')
-        logging.info('Start exporting to: %s', output_path.resolve())
+        logging.info('Export starts to: %s', output_path.resolve())
         fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
         translate = {
             'atime': 'Access time',
@@ -799,6 +807,26 @@ class DuplicatesSearcher_New:
                 logging.info('Export complited')
         except Exception as e:
             logging.info('%s: %s', e.__class__.__name__, e)
+
+    def find_duplicates_newest(self, paths: list[Path]) -> dict[Path]:
+        logging.info(
+            'Search for duplicates has been started in directories:\n\t%s',
+            '\n\t'.join([f'{i}. {p.resolve()}' for i, p in enumerate(paths, start=1)])
+        )
+        files = self.get_directories_content_newest(paths)
+        grouped_by_size = self.group_by_size(files)
+        reduced_and_grouped_by_size = self.remove_items_with_one_value(grouped_by_size)
+
+
+        # print(len(grouped_by_size), len(reduced_and_grouped_by_size))
+        grouped_by_first_block_hash = self.group_by_hash(reduced_and_grouped_by_size, only_first_block=True)
+        reduced_and_grouped_by_first_block_hash = self.remove_items_with_one_value(grouped_by_first_block_hash)
+        logging.info('%s groups with equal first %s bits hash reduced to %s groups')
+        # print(len(grouped_by_first_block_hash), len(reduced_and_grouped_by_first_block_hash))
+        grouped_by_hash = self.group_by_hash(reduced_and_grouped_by_first_block_hash)
+        grouped_by_hash_and_reduced = self.remove_items_with_one_value(grouped_by_hash)
+        logging.info('%s groups with equal first %s bits hash reduced to %s groups')
+        self.export_file_infos(files)
 
 def test():
     ds = DuplicatesSearcher()
@@ -831,6 +859,18 @@ def test_2():
 
     ds.export_file_infos(files)
 
+def test_3():
+    paths = [
+        './test',
+        './test (копия)',
+        './test (копия) (another copy)'
+    ]
+    paths = [Path(p) for p in paths]
+    # paths = ['./test']
+    ds = DuplicatesSearcher_New()
+    ds.find_duplicates_newest(paths)    
+
 if __name__ == '__main__':
     # test()
-    test_2()
+    # test_2()
+    test_3()
