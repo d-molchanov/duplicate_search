@@ -786,7 +786,7 @@ class DuplicatesSearcher_New:
     def export_file_infos(self, files: list[Path],  output_path: Path | None = None) -> None:
         ts = datetime.now()
         if not output_path:
-            output_path = Path('.') / ts.strftime('%Y%m%d-%H%M%S.log')
+            output_path = Path('.') / ts.strftime('%Y%m%d-%H%M%S.csv')
         logging.info('Export starts to: %s', output_path.resolve())
         fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
         translate = {
@@ -808,25 +808,99 @@ class DuplicatesSearcher_New:
         except Exception as e:
             logging.info('%s: %s', e.__class__.__name__, e)
 
+    def export_duplicates(self, files: dict[Path],  output_path: Path | None = None) -> None:
+        ts = datetime.now()
+        if not output_path:
+            output_path = Path('.') / ts.strftime('ds-%Y%m%d-%H%M%S.csv')
+        logging.info('Export starts to: %s', output_path.resolve())
+        fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
+        fieldnames.append('hash')
+        translate = {
+            'atime': 'Access time',
+            'mtime': 'Modification time',
+            'ctime': 'Creation time',
+            'btime': 'Birth time'
+        }
+        names = [f if f not in translate else translate[f] for f in fieldnames]
+        try:
+            with output_path.open('w', encoding='utf-8', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=names, delimiter=';')
+                writer.writeheader()
+                for key, value in files.items():
+                    for f in value:
+                        file_dict = asdict(f)
+                        new_dict = {translate.get(k, k): v for  k, v in file_dict.items()}
+                        new_dict['hash'] = key
+                        writer.writerow(new_dict)
+                logging.info('Export complited')
+        except Exception as e:
+            logging.info('%s: %s', e.__class__.__name__, e)
+
+    def calculate_dict_size(self, files: dict[FileInfo]) -> str:
+        size = sum(sum(f.size for f in value) for value in files.values())
+        return humanize.naturalsize(size, binary=False)
+
+    def sort_dict(self, files: dict[FileInfo]) -> dict[FileInfo]:
+        # new_dict = {key: value[0].size for key, value in files.items()}
+        # print(new_dict)
+        # print(f'{list(files.items())[0][1][0].size = }')
+        # print(f'{sorted(files.items(), key=lambda item: item[1][0].size) = }')
+        # return dict(sorted(new_dict.items(), key=lambda item: item[1]))
+        return dict(sorted(files.items(), reverse=True, key=lambda item: item[1][0].size))
+
     def find_duplicates_newest(self, paths: list[Path]) -> dict[Path]:
         logging.info(
-            'Search for duplicates has been started in directories:\n\t%s',
+            'Search for duplicates has been started in %s directories:\n\t%s',
+            len(paths),
             '\n\t'.join([f'{i}. {p.resolve()}' for i, p in enumerate(paths, start=1)])
         )
         files = self.get_directories_content_newest(paths)
         grouped_by_size = self.group_by_size(files)
+
+        # total_size = sum(sum(f.size for f in value) for value in grouped_by_size.values())
+        logging.info(
+            'Grouped by size: %s groups / %s',
+            len(grouped_by_size),
+            self.calculate_dict_size(grouped_by_size)
+        )
         reduced_and_grouped_by_size = self.remove_items_with_one_value(grouped_by_size)
-
-
-        # print(len(grouped_by_size), len(reduced_and_grouped_by_size))
+        logging.info(
+            'Grouped by size with two or more members: %s groups / %s',
+            len(reduced_and_grouped_by_size),
+            self.calculate_dict_size(reduced_and_grouped_by_size)
+        )
         grouped_by_first_block_hash = self.group_by_hash(reduced_and_grouped_by_size, only_first_block=True)
+        logging.info(
+            'Grouped by first 1024 bits hash: %s groups / %s',
+            len(grouped_by_first_block_hash),
+            self.calculate_dict_size(grouped_by_first_block_hash)
+        )
         reduced_and_grouped_by_first_block_hash = self.remove_items_with_one_value(grouped_by_first_block_hash)
-        logging.info('%s groups with equal first %s bits hash reduced to %s groups')
+        logging.info(
+            'Grouped by first 1024 bits hash with two or more members: %s groups / %s',
+            len(reduced_and_grouped_by_first_block_hash),
+            self.calculate_dict_size(reduced_and_grouped_by_first_block_hash)
+        )
+        # logging.info('%s groups with equal first %s bits hash reduced to %s groups')
         # print(len(grouped_by_first_block_hash), len(reduced_and_grouped_by_first_block_hash))
         grouped_by_hash = self.group_by_hash(reduced_and_grouped_by_first_block_hash)
+        logging.info(
+            'Grouped by hash: %s groups / %s',
+            len(grouped_by_hash),
+            self.calculate_dict_size(grouped_by_hash)
+        )
         grouped_by_hash_and_reduced = self.remove_items_with_one_value(grouped_by_hash)
-        logging.info('%s groups with equal first %s bits hash reduced to %s groups')
-        self.export_file_infos(files)
+        logging.info(
+            'Grouped by hash with two or more members: %s groups / %s',
+            len(grouped_by_hash_and_reduced),
+            self.calculate_dict_size(grouped_by_hash_and_reduced)
+        )
+        # print(*list(grouped_by_hash_and_reduced.values()), sep='\n')
+        grouped_by_hash_and_reduced_and_sorted = self.sort_dict(grouped_by_hash_and_reduced)
+        # print(grouped_by_hash_and_reduced_and_sorted)
+        # self.export_file_infos(files)
+        # self.export_duplicates(grouped_by_hash_and_reduced)
+        self.export_duplicates(grouped_by_hash_and_reduced_and_sorted)
 
 def test():
     ds = DuplicatesSearcher()
@@ -839,7 +913,9 @@ def test_2():
         './test (копия)',
         './test (копия) (another copy)'
     ]
-    # paths = ['./test']
+    paths = ['./test']
+
+    
     ds = DuplicatesSearcher_New()
     files = ds.get_directories_content_newest(paths)
     grouped_by_size = ds.group_by_size(files)
@@ -865,8 +941,9 @@ def test_3():
         './test (копия)',
         './test (копия) (another copy)'
     ]
-    paths = [Path(p) for p in paths]
+    paths = ['D:/MDA/(2024_11_18)_Backup']
     # paths = ['./test']
+    paths = [Path(p) for p in paths]
     ds = DuplicatesSearcher_New()
     ds.find_duplicates_newest(paths)    
 
