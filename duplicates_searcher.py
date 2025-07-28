@@ -836,6 +836,38 @@ class DuplicatesSearcher_New:
         except Exception as e:
             logging.info('%s: %s', e.__class__.__name__, e)
 
+    def export_duplicates_to_remove(self, files: dict[Path], output_path: Path | None = None) -> None:
+        ts = datetime.now()
+        if not output_path:
+            output_path = Path('.') / ts.strftime('ds_tr-%Y%m%d-%H%M%S.csv')
+        logging.info('Export starts to: %s', output_path.resolve())
+        fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
+        fieldnames.append('hash')
+        translate = {
+            'atime': 'Access time',
+            'mtime': 'Modification time',
+            'ctime': 'Creation time',
+            'btime': 'Birth time'
+        }
+        names = [f if f not in translate else translate[f] for f in fieldnames]
+        try:
+            with output_path.open('w', encoding='utf-8', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=names, delimiter=';')
+                writer.writeheader()
+                for key, value in files.items():
+                    if value[0].size == 0:
+                        data = value
+                    else:
+                        data = value[1:]
+                    for f in data:
+                        file_dict = asdict(f)
+                        new_dict = {translate.get(k, k): v for  k, v in file_dict.items()}
+                        new_dict['hash'] = key
+                        writer.writerow(new_dict)
+                logging.info('Export complited')
+        except Exception as e:
+            logging.info('%s: %s', e.__class__.__name__, e)
+
     def calculate_dict_size(self, files: dict[FileInfo]) -> str:
         size = sum(sum(f.size for f in value) for value in files.values())
         return humanize.naturalsize(size, binary=False)
@@ -901,6 +933,7 @@ class DuplicatesSearcher_New:
         # self.export_file_infos(files)
         # self.export_duplicates(grouped_by_hash_and_reduced)
         self.export_duplicates(grouped_by_hash_and_reduced_and_sorted)
+        self.export_duplicates_to_remove(grouped_by_hash_and_reduced_and_sorted)
 
 def test():
     ds = DuplicatesSearcher()
