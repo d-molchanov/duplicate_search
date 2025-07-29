@@ -729,6 +729,11 @@ class DuplicatesSearcher_New:
                 result[f.size].append(f)
             else:
                 result[f.size] = [f]
+        logging.info(
+            'Grouped by size: %s groups / %s',
+            len(result),
+            self.calculate_dict_size(result)
+        )
         return result
 
     def remove_items_with_one_value(self, files: dict[FileInfo]) -> dict[FileInfo]:
@@ -760,6 +765,15 @@ class DuplicatesSearcher_New:
                     result[file_hash].append(f)
                 else:
                     result[file_hash] = [f]
+        log = ''
+        if only_first_block:
+            log = ' first 1024 bits'
+        logging.info(
+            'Grouped by%s hash: %s groups / %s',
+            log,
+            len(result),
+            self.calculate_dict_size(result)
+        )
         return result
 
 
@@ -890,24 +904,19 @@ class DuplicatesSearcher_New:
         grouped_by_size = self.group_by_size(files)
 
         # total_size = sum(sum(f.size for f in value) for value in grouped_by_size.values())
-        logging.info(
-            'Grouped by size: %s groups / %s',
-            len(grouped_by_size),
-            self.calculate_dict_size(grouped_by_size)
-        )
+
         reduced_and_grouped_by_size = self.remove_items_with_one_value(grouped_by_size)
         logging.info(
             'Grouped by size with two or more members: %s groups / %s',
             len(reduced_and_grouped_by_size),
             self.calculate_dict_size(reduced_and_grouped_by_size)
         )
-        grouped_by_first_block_hash = self.group_by_hash(reduced_and_grouped_by_size, only_first_block=True)
-        logging.info(
-            'Grouped by first 1024 bits hash: %s groups / %s',
-            len(grouped_by_first_block_hash),
-            self.calculate_dict_size(grouped_by_first_block_hash)
+        grouped_by_first_block_hash = self.group_by_hash(
+            reduced_and_grouped_by_size, only_first_block=True
         )
-        reduced_and_grouped_by_first_block_hash = self.remove_items_with_one_value(grouped_by_first_block_hash)
+        reduced_and_grouped_by_first_block_hash = self.remove_items_with_one_value(
+            grouped_by_first_block_hash
+            )
         logging.info(
             'Grouped by first 1024 bits hash with two or more members: %s groups / %s',
             len(reduced_and_grouped_by_first_block_hash),
@@ -916,11 +925,6 @@ class DuplicatesSearcher_New:
         # logging.info('%s groups with equal first %s bits hash reduced to %s groups')
         # print(len(grouped_by_first_block_hash), len(reduced_and_grouped_by_first_block_hash))
         grouped_by_hash = self.group_by_hash(reduced_and_grouped_by_first_block_hash)
-        logging.info(
-            'Grouped by hash: %s groups / %s',
-            len(grouped_by_hash),
-            self.calculate_dict_size(grouped_by_hash)
-        )
         grouped_by_hash_and_reduced = self.remove_items_with_one_value(grouped_by_hash)
         logging.info(
             'Grouped by hash with two or more members: %s groups / %s',
@@ -978,7 +982,7 @@ def test_3():
     # paths = ['./test']
     paths = [Path(p) for p in paths]
     ds = DuplicatesSearcher_New()
-    ds.find_duplicates_newest(paths)    
+    ds.find_duplicates_newest(paths)
 
 if __name__ == '__main__':
     # test()
