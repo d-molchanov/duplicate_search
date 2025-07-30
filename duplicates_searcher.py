@@ -756,11 +756,11 @@ class DuplicatesSearcher_New:
                 result = '-1'
         return result
 
-    def group_by_hash(self, files: dict, only_first_block=False):
+    def group_by_hash(self, files: dict, block_size=1024, only_first_block=False):
         result = {}
         for key, value in files.items():
             for f in value:
-                file_hash = self.get_file_hash(f.path, only_first_block=only_first_block)
+                file_hash = self.get_file_hash(f.path, block_size=block_size, only_first_block=only_first_block)
                 if file_hash in result:
                     result[file_hash].append(f)
                 else:
@@ -822,10 +822,13 @@ class DuplicatesSearcher_New:
         except Exception as e:
             logging.info('%s: %s', e.__class__.__name__, e)
 
-    def export_duplicates(self, files: dict[Path],  output_path: Path | None = None) -> None:
+    def export_duplicates(self, files: dict[Path],  output_path: Path | None = None, for_remove_only: bool = False) -> None:
         ts = datetime.now()
         if not output_path:
-            output_path = Path('.') / ts.strftime('ds-%Y%m%d-%H%M%S.csv')
+            if not for_remove_only:
+                output_path = Path('.') / ts.strftime('ds-%Y%m%d-%H%M%S.csv')
+            else:
+                output_path = Path('.') / ts.strftime('ds-tr%Y%m%d-%H%M%S.csv')
         logging.info('Export starts to: %s', output_path.resolve())
         fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
         fieldnames.append('hash')
@@ -841,38 +844,13 @@ class DuplicatesSearcher_New:
                 writer = csv.DictWriter(csvfile, fieldnames=names, delimiter=';')
                 writer.writeheader()
                 for key, value in files.items():
-                    for f in value:
-                        file_dict = asdict(f)
-                        new_dict = {translate.get(k, k): v for  k, v in file_dict.items()}
-                        new_dict['hash'] = key
-                        writer.writerow(new_dict)
-                logging.info('Export complited')
-        except Exception as e:
-            logging.info('%s: %s', e.__class__.__name__, e)
-
-    def export_duplicates_to_remove(self, files: dict[Path], output_path: Path | None = None) -> None:
-        ts = datetime.now()
-        if not output_path:
-            output_path = Path('.') / ts.strftime('ds_tr-%Y%m%d-%H%M%S.csv')
-        logging.info('Export starts to: %s', output_path.resolve())
-        fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
-        fieldnames.append('hash')
-        translate = {
-            'atime': 'Access time',
-            'mtime': 'Modification time',
-            'ctime': 'Creation time',
-            'btime': 'Birth time'
-        }
-        names = [f if f not in translate else translate[f] for f in fieldnames]
-        try:
-            with output_path.open('w', encoding='utf-8', newline='') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=names, delimiter=';')
-                writer.writeheader()
-                for key, value in files.items():
-                    if value[0].size == 0:
-                        data = value
+                    if for_remove_only:
+                        if value[0].size == 0:
+                            data = value
+                        else:
+                            data = value[1:]
                     else:
-                        data = value[1:]
+                        data = value
                     for f in data:
                         file_dict = asdict(f)
                         new_dict = {translate.get(k, k): v for  k, v in file_dict.items()}
@@ -881,6 +859,7 @@ class DuplicatesSearcher_New:
                 logging.info('Export complited')
         except Exception as e:
             logging.info('%s: %s', e.__class__.__name__, e)
+
 
     def calculate_dict_size(self, files: dict[FileInfo]) -> str:
         size = sum(sum(f.size for f in value) for value in files.values())
@@ -937,7 +916,8 @@ class DuplicatesSearcher_New:
         # self.export_file_infos(files)
         # self.export_duplicates(grouped_by_hash_and_reduced)
         self.export_duplicates(grouped_by_hash_and_reduced_and_sorted)
-        self.export_duplicates_to_remove(grouped_by_hash_and_reduced_and_sorted)
+        self.export_duplicates(grouped_by_hash_and_reduced_and_sorted, for_remove_only=True)
+        # self.export_duplicates_to_remove(grouped_by_hash_and_reduced_and_sorted)
 
 def test():
     ds = DuplicatesSearcher()
@@ -978,8 +958,9 @@ def test_3():
         './test (копия)',
         './test (копия) (another copy)'
     ]
-    paths = ['D:/MDA/(2024_11_18)_Backup']
-    # paths = ['./test']
+    # paths = ['D:/MDA/(2024_11_18)_Backup']
+    paths = ['./test']
+    paths = ['.']
     paths = [Path(p) for p in paths]
     ds = DuplicatesSearcher_New()
     ds.find_duplicates_newest(paths)
