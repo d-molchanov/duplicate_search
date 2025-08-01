@@ -882,7 +882,7 @@ class DuplicatesSearcher_New:
 
     def calculate_dict_size(self, files: dict[FileInfo]) -> str:
         size = sum(sum(f.size for f in value) for value in files.values())
-        files_count = sum(len(g) for g in files)
+        files_count = sum(len(g) for g in files.values())
         return files_count, humanize.naturalsize(size, binary=False)
 
     def sort_dict(self, files: dict[FileInfo]) -> dict[FileInfo]:
