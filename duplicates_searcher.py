@@ -719,7 +719,10 @@ class DuplicatesSearcher_New:
             root = Path(root).resolve()
             for f in files:
                 filepath = root / Path(f)
-                filepaths.append(FileInfoGetter.get_file_info(filepath))
+                try:
+                    filepaths.append(FileInfoGetter.get_file_info(filepath))
+                except FileNotFoundError as e:
+                    pass
         return filepaths
 
     def group_by_size(self, files: list[FileInfo]) -> dict[int, list[FileInfo]]:
@@ -730,17 +733,30 @@ class DuplicatesSearcher_New:
             else:
                 result[f.size] = [f]
         logging.info(
-            'Grouped by size: %s groups / %s',
+            'Grouped by size:\t\t\t\t\t\t\t\t\tGroups:\t%s\t|\tFiles:\t%s\t|\tSize:\t%s',
             len(result),
-            self.calculate_dict_size(result)
+            *self.calculate_dict_size(result)
         )
         return result
 
-    def remove_items_with_one_value(self, files: dict[FileInfo]) -> dict[FileInfo]:
-        return {
+    def remove_items_with_one_value(
+        self,
+        files: dict[FileInfo],
+        log_title: str = '',
+        offset: str = ''
+    ) -> dict[FileInfo]:
+        result =  {
             key: value for key, value in files.items() if
             isinstance(value, list) and len(value) > 1
         }
+        logging.info(
+            '%s:%s\tGroups: %s\t|\tFiles:\t%s\t|\tSize:\t%s',
+            log_title,
+            offset,
+            len(result),
+            *self.calculate_dict_size(result)
+        )
+        return result
 
     def get_file_hash(self, path, block_size=1024, only_first_block=False):
         with path.open('rb') as f:
@@ -756,23 +772,31 @@ class DuplicatesSearcher_New:
                 result = '-1'
         return result
 
-    def group_by_hash(self, files: dict, block_size=1024, only_first_block=False):
+    def group_by_hash(
+        self,
+        files: dict,
+        block_size=1024,
+        only_first_block=False
+    ) -> dict[str, list[FileInfo]]:
         result = {}
         for key, value in files.items():
             for f in value:
-                file_hash = self.get_file_hash(f.path, block_size=block_size, only_first_block=only_first_block)
+                file_hash = self.get_file_hash(
+                    f.path,
+                    block_size=block_size,
+                    only_first_block=only_first_block)
                 if file_hash in result:
                     result[file_hash].append(f)
                 else:
                     result[file_hash] = [f]
-        log = ''
-        if only_first_block:
-            log = f' first {block_size} bits'
+        log = f' first {block_size} bits' if only_first_block else ''
+        offset = '\t'*5 if only_first_block else '\t'*9
         logging.info(
-            'Grouped by%s hash: %s groups / %s',
+            'Grouped by%s hash:%sGroups:\t%s\t|\tFiles:\t%s\t|\tSize:\t%s',
             log,
+            offset,
             len(result),
-            self.calculate_dict_size(result)
+            *self.calculate_dict_size(result)
         )
         return result
 
@@ -879,7 +903,8 @@ class DuplicatesSearcher_New:
         except Exception as e:
             logging.info('%s: %s', e.__class__.__name__, e)
 
-
+    # Возможно, стоит разделить метод на два или
+    # загнать получение суммарного размера и количества в один цикл
     def calculate_dict_size(self, files: dict[FileInfo]) -> str:
         size = sum(sum(f.size for f in value) for value in files.values())
         files_count = sum(len(g) for g in files.values())
@@ -888,7 +913,7 @@ class DuplicatesSearcher_New:
     def sort_dict(self, files: dict[FileInfo]) -> dict[FileInfo]:
         return dict(sorted(files.items(), reverse=True, key=lambda item: item[1][0].size))
 
-    def find_duplicates_newest(self, paths: list[Path]) -> dict[Path]:
+    def find_duplicates_newest(self, paths: list[Path], block_size: int = 1024) -> dict[Path]:
         logging.info(
             'Search for duplicates has been started in %s directories:\n\t%s',
             len(paths),
@@ -899,33 +924,31 @@ class DuplicatesSearcher_New:
 
         # total_size = sum(sum(f.size for f in value) for value in grouped_by_size.values())
 
-        reduced_and_grouped_by_size = self.remove_items_with_one_value(grouped_by_size)
-        logging.info(
-            'Grouped by size with two or more members: %s groups / %s files / %s',
-            len(reduced_and_grouped_by_size),
-            *self.calculate_dict_size(reduced_and_grouped_by_size)
+        reduced_and_grouped_by_size = self.remove_items_with_one_value(
+            grouped_by_size,
+            'Grouped by size (2+ members)',
+            '\t'*5
         )
+        
         grouped_by_first_block_hash = self.group_by_hash(
-            reduced_and_grouped_by_size, only_first_block=True
+            reduced_and_grouped_by_size, block_size=block_size, only_first_block=True
         )
         reduced_and_grouped_by_first_block_hash = self.remove_items_with_one_value(
-            grouped_by_first_block_hash
+            grouped_by_first_block_hash,
+            f'Grouped by first {block_size} bits hash (2+ members)',
+            '\t'
             )
-        logging.info(
-            'Grouped by first 1024 bits hash with two or more members: %s groups / %s',
-            len(reduced_and_grouped_by_first_block_hash),
-            self.calculate_dict_size(reduced_and_grouped_by_first_block_hash)
-        )
         # logging.info('%s groups with equal first %s bits hash reduced to %s groups')
         # print(len(grouped_by_first_block_hash), len(reduced_and_grouped_by_first_block_hash))
-        grouped_by_hash = self.group_by_hash(reduced_and_grouped_by_first_block_hash)
-        grouped_by_hash_and_reduced = self.remove_items_with_one_value(grouped_by_hash)
-        logging.info(
-            'Grouped by hash with two or more members: %s groups / %s',
-            len(grouped_by_hash_and_reduced),
-            self.calculate_dict_size(grouped_by_hash_and_reduced)
+        grouped_by_hash = self.group_by_hash(
+            reduced_and_grouped_by_first_block_hash,
+            block_size=block_size
         )
-        # print(*list(grouped_by_hash_and_reduced.values()), sep='\n')
+        grouped_by_hash_and_reduced = self.remove_items_with_one_value(
+            grouped_by_hash,
+            'Grouped by hash (2+ members)',
+            '\t'*5
+        )
         grouped_by_hash_and_reduced_and_sorted = self.sort_dict(grouped_by_hash_and_reduced)
         # print(grouped_by_hash_and_reduced_and_sorted)
         # self.export_file_infos(files)
