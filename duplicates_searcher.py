@@ -835,8 +835,8 @@ class DuplicatesSearcher_New:
         files: list[Path],
         output_path: Path | None = None
     ) -> None:
-        ts = datetime.now()
         if not output_path:
+            ts = datetime.now()
             output_path = Path('.') / ts.strftime('%Y%m%d-%H%M%S.csv')
         logging.info('Export starts to: %s', output_path.resolve())
         fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
@@ -956,6 +956,7 @@ class DuplicatesSearcher_New:
                 except FileNotFoundError as e:
                     print(e)
 
+
     def find_duplicates_newest(
         self,
         paths: list[Path],
@@ -970,8 +971,6 @@ class DuplicatesSearcher_New:
         )
         files = self.get_directories_content_newest(paths)
         grouped_by_size = self.group_by_size(files)
-
-        # total_size = sum(sum(f.size for f in value) for value in grouped_by_size.values())
 
         reduced_and_grouped_by_size = self.remove_items_with_one_value(
             grouped_by_size,
@@ -989,8 +988,7 @@ class DuplicatesSearcher_New:
             f'Grouped by first {block_size} bits hash (2+ members)',
             '\t'
             )
-        # logging.info('%s groups with equal first %s bits hash reduced to %s groups')
-        # print(len(grouped_by_first_block_hash), len(reduced_and_grouped_by_first_block_hash))
+        
         grouped_by_hash = self.group_by_hash(
             reduced_and_grouped_by_first_block_hash,
             block_size=block_size
@@ -1006,8 +1004,6 @@ class DuplicatesSearcher_New:
         duplicates_to_remove = self.get_duplicates_to_remove(
             grouped_by_hash_and_reduced_and_sorted
         )
-        # print(grouped_by_hash_and_reduced_and_sorted)
-        # self.export_file_infos(files)
         # self.export_duplicates(grouped_by_hash_and_reduced)
         self.export_duplicates(grouped_by_hash_and_reduced_and_sorted)
         self.export_duplicates(duplicates_to_remove)
