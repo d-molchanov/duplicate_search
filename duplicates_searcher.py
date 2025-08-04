@@ -956,6 +956,32 @@ class DuplicatesSearcher_New:
                 except FileNotFoundError as e:
                     print(e)
 
+    def write_data_to_file_new(
+        self,
+        files: dict[str, list[FileInfo]] | list[FileInfo],
+        header: list[str],
+        translate: dict[str, str],
+        writer: csv.DictWriter,
+    ) -> None:
+        if isinstance(files, dict):
+            for key, value in files.items():
+                for f in value:
+                    file_dict = asdict(f)
+                    new_dict = {
+                        translate.get(k, k): v for
+                        k, v in file_dict.items()
+                    }
+                    new_dict['Hash'] = key
+                    writer.writerow(new_dict)
+        elif isinstance(files, list):
+            for f in files:
+                file_dict = asdict(f)
+                new_dict = {
+                    translate.get(k, k): v for
+                    k, v in file_dict.items()
+                }
+                writer.writerow(new_dict)
+
     def export_to_csv(
         self,
         files: list[FileInfo] | dict[str, FileInfo],
@@ -964,30 +990,35 @@ class DuplicatesSearcher_New:
         timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
         output_path = output_path or Path.cwd() / f'{timestamp}.csv'
         logging.info('Export starts to: %s', output_path.resolve())
+        fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
         if isinstance(files, dict):
-            print('Dict!')
+            fieldnames.append('Hash')
+            # files_to_write = [item for value in files.values() for item in value]
         elif isinstance(files, list):
             print('List!')
+            # files_to_write = files
         else:
             print('Do not know!')
-        # fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
-        # fieldnames.append('hash')
-        # translate = {
-        #     'atime': 'Access time',
-        #     'mtime': 'Modification time',
-        #     'ctime': 'Creation time',
-        #     'btime': 'Birth time'
-        # }
-        # column_names = [
-        #     f if f not in translate else translate[f] for f in fieldnames
-        # ]
-        # try:
-        #     with output_path.open('w', encoding='utf-8', newline='') as csvfile:
-        #         writer = csv.DictWriter(csvfile, fieldnames=column_names, delimiter=';')
-        #         self.write_data_to_file(files, column_names, translate, writer, for_remove_only)
-        #         logging.info('Export complited')
-        # except Exception as e:
-        #     logging.info('%s: %s', e.__class__.__name__, e)
+            return
+        translate = {
+            'path': 'Path',
+            'size': 'Size, B',
+            'atime': 'Access time',
+            'mtime': 'Modification time',
+            'ctime': 'Creation time',
+            'btime': 'Birth time'
+        }
+        column_names = [
+            f if f not in translate else translate[f] for f in fieldnames
+        ]
+        # print(*files_to_write, sep='\n')
+        try:
+            with output_path.open('w', encoding='utf-8', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=column_names, delimiter=';')
+                self.write_data_to_file_new(files, column_names, translate, writer)
+                logging.info('Export complited')
+        except Exception as e:
+            logging.info('%s: %s', e.__class__.__name__, e)
 
     def find_duplicates_newest(
         self,
@@ -1036,11 +1067,21 @@ class DuplicatesSearcher_New:
         duplicates_to_remove = self.get_duplicates_to_remove(
             grouped_by_hash_and_reduced_and_sorted
         )
+        timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        filename = Path.cwd() / f"{timestamp}.csv"
         # self.export_duplicates(grouped_by_hash_and_reduced)
-        self.export_duplicates(grouped_by_hash_and_reduced_and_sorted)
-        self.export_duplicates(duplicates_to_remove)
+        # self.export_duplicates(grouped_by_hash_and_reduced_and_sorted)
+        self.export_to_csv(
+            grouped_by_hash_and_reduced_and_sorted,
+            output_path=Path.cwd() / f"ds-{timestamp}.csv"
+            )
+        # self.export_duplicates(duplicates_to_remove)
         # self.remove_files(duplicates_to_remove)
-        self.export_to_csv(files)
+        self.export_to_csv(
+            duplicates_to_remove,
+            output_path=Path.cwd() / f"ds_tr-{timestamp}.csv"
+        )
+        # self.export_to_csv(duplicates_to_remove)
         # self.export_duplicates(grouped_by_hash_and_reduced_and_sorted, for_remove_only=True)
         # self.export_duplicates_to_remove(grouped_by_hash_and_reduced_and_sorted)
 
