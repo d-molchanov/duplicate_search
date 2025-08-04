@@ -956,6 +956,38 @@ class DuplicatesSearcher_New:
                 except FileNotFoundError as e:
                     print(e)
 
+    def export_to_csv(
+        self,
+        files: list[FileInfo] | dict[str, FileInfo],
+        output_path: Path | None = None
+    ) -> None:
+        timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+        output_path = output_path or Path.cwd() / f'{timestamp}.csv'
+        logging.info('Export starts to: %s', output_path.resolve())
+        if isinstance(files, dict):
+            print('Dict!')
+        elif isinstance(files, list):
+            print('List!')
+        else:
+            print('Do not know!')
+        # fieldnames = [field.name for field in dataclasses.fields(FileInfo)]
+        # fieldnames.append('hash')
+        # translate = {
+        #     'atime': 'Access time',
+        #     'mtime': 'Modification time',
+        #     'ctime': 'Creation time',
+        #     'btime': 'Birth time'
+        # }
+        # column_names = [
+        #     f if f not in translate else translate[f] for f in fieldnames
+        # ]
+        # try:
+        #     with output_path.open('w', encoding='utf-8', newline='') as csvfile:
+        #         writer = csv.DictWriter(csvfile, fieldnames=column_names, delimiter=';')
+        #         self.write_data_to_file(files, column_names, translate, writer, for_remove_only)
+        #         logging.info('Export complited')
+        # except Exception as e:
+        #     logging.info('%s: %s', e.__class__.__name__, e)
 
     def find_duplicates_newest(
         self,
@@ -1008,7 +1040,7 @@ class DuplicatesSearcher_New:
         self.export_duplicates(grouped_by_hash_and_reduced_and_sorted)
         self.export_duplicates(duplicates_to_remove)
         # self.remove_files(duplicates_to_remove)
-        
+        self.export_to_csv(files)
         # self.export_duplicates(grouped_by_hash_and_reduced_and_sorted, for_remove_only=True)
         # self.export_duplicates_to_remove(grouped_by_hash_and_reduced_and_sorted)
 
